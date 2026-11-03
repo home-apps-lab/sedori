@@ -1,0 +1,240 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="せどり計算帳">
+<style>:root{color-scheme:light;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style><title>せどり計算帳</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Zen+Kaku+Gothic+New:wght@400;500;700&family=IBM+Plex+Mono:wght@500;600&display=swap">
+<style>
+/* 値札とレシートの世界：上に答え（判定）、下に入力。1列で親指だけで使える */
+:root{
+  --bg:#f3f5f2; --card:#ffffff; --fg:#1d2420; --muted:#5f6b64; --line:#d5ddd7;
+  --accent:#1f6b52; --accent-soft:#e2efe9;
+  --ok:#1f7a4d; --ok-bg:#e1f3e8; --mid:#9a6a00; --mid-bg:#fbf0d6; --ng:#b03a2e; --ng-bg:#f8e3e0;
+  --f-body:"Zen Kaku Gothic New","Hiragino Sans","Yu Gothic",system-ui,sans-serif;
+  --f-num:"IBM Plex Mono","SFMono-Regular",Consolas,monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#141a17; --card:#1d2521; --fg:#e6ece8; --muted:#9aa8a0; --line:#33403a;
+  --accent:#5cc49c; --accent-soft:#1f3a30;
+  --ok:#6fd39d; --ok-bg:#183a29; --mid:#e8b955; --mid-bg:#3a2f14; --ng:#f08a7e; --ng-bg:#3d1f1b; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#141a17; --card:#1d2521; --fg:#e6ece8; --muted:#9aa8a0; --line:#33403a;
+  --accent:#5cc49c; --accent-soft:#1f3a30;
+  --ok:#6fd39d; --ok-bg:#183a29; --mid:#e8b955; --mid-bg:#3a2f14; --ng:#f08a7e; --ng-bg:#3d1f1b; color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--fg);font-family:var(--f-body);font-size:16px;line-height:1.6;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:16px 40px}
+.wrap{max-width:520px;margin:0 auto;display:grid;gap:16px}
+header{display:flex;align-items:baseline;justify-content:space-between;gap:8px;flex-wrap:wrap}
+h1{font-size:22px;margin:0;letter-spacing:.04em;text-wrap:balance}
+.sub{color:var(--muted);font-size:13px}
+.num{font-family:var(--f-num);font-variant-numeric:tabular-nums}
+
+/* 判定（値札） */
+.verdict{border-radius:14px;padding:16px;display:grid;gap:10px;border:2px solid currentColor}
+.verdict.ok{color:var(--ok);background:var(--ok-bg)}
+.verdict.mid{color:var(--mid);background:var(--mid-bg)}
+.verdict.ng{color:var(--ng);background:var(--ng-bg)}
+.v-top{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap}
+.v-label{font-weight:700;font-size:20px}
+.v-profit{font-size:30px;font-weight:600}
+.v-note{color:var(--fg);font-size:14px}
+.breakdown{background:var(--card);border-radius:10px;padding:10px 12px;color:var(--fg);font-size:14px;display:grid;gap:2px}
+.row{display:flex;justify-content:space-between;gap:12px}
+.row.total{border-top:1px dashed var(--line);margin-top:4px;padding-top:6px;font-weight:700}
+.hints{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.hint{background:var(--card);border-radius:10px;padding:8px 10px;color:var(--fg);min-width:0}
+.hint small{display:block;color:var(--muted);font-size:12px;line-height:1.4}
+.hint b{font-size:18px}
+
+/* 入力 */
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px;display:grid;gap:14px}
+label{display:grid;gap:4px;font-size:14px;font-weight:500}
+label .help{font-weight:400;color:var(--muted);font-size:12px}
+input,select{font:inherit;font-size:18px;width:100%;padding:10px 12px;border:1px solid var(--line);border-radius:10px;background:var(--bg);color:var(--fg);min-width:0}
+input:focus-visible,select:focus-visible,button:focus-visible,summary:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+.yen{position:relative}
+.yen input{padding-right:40px;font-family:var(--f-num)}
+.yen::after{content:"円";position:absolute;right:12px;top:50%;transform:translateY(-50%);color:var(--muted);font-size:14px}
+.yen.pct::after{content:"%"}
+.two{display:grid;grid-template-columns:1fr auto;gap:8px;align-items:end}
+.seg{display:flex;border:1px solid var(--line);border-radius:10px;overflow:hidden}
+.seg button{font:inherit;font-size:15px;border:0;background:var(--bg);color:var(--fg);padding:11px 14px;cursor:pointer}
+.seg button[aria-pressed="true"]{background:var(--accent);color:var(--card);font-weight:700}
+.btns{display:flex;gap:8px;flex-wrap:wrap}
+.btn{font:inherit;font-size:15px;padding:10px 16px;border-radius:10px;border:1px solid var(--accent);background:var(--card);color:var(--accent);cursor:pointer}
+.example{font-size:12px;color:var(--accent);background:var(--accent-soft);border-radius:999px;padding:2px 10px}
+details{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:12px 16px}
+summary{cursor:pointer;font-weight:700}
+details .card{border:0;padding:12px 0 0}
+.foot{color:var(--muted);font-size:12px;line-height:1.6}
+@media (prefers-reduced-motion:no-preference){.verdict{transition:background .2s,color .2s}}
+</style>
+
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>せどり計算帳</h1>
+    <span class="sub">新品・メルカリ向け</span>
+  </header>
+
+  <section id="verdict" class="verdict ok" aria-live="polite">
+    <div class="v-top">
+      <span class="v-label" id="vLabel">仕入れOK</span>
+      <span class="v-profit num" id="vProfit">+0円</span>
+    </div>
+    <div class="v-note" id="vNote"></div>
+    <div class="breakdown" id="breakdown"></div>
+    <div class="hints">
+      <div class="hint"><small>この値段で売るなら<br>仕入れはいくらまで</small><b class="num" id="maxBuy">-</b></div>
+      <div class="hint"><small>この仕入れなら<br>いくら以上で売る</small><b class="num" id="minSell">-</b></div>
+    </div>
+  </section>
+
+  <section class="card" aria-label="入力">
+    <div class="btns" style="justify-content:space-between;align-items:center">
+      <span class="example" id="exTag">いまは例が入っています</span>
+      <button class="btn" id="clear" type="button">新しく入力する</button>
+    </div>
+    <label for="name">商品名 <span class="help">メモ用。なくてもOK</span>
+      <input id="name" type="text" placeholder="例：ワイヤレスイヤホン">
+    </label>
+    <label for="buy">買う値段（税込）
+      <span class="yen"><input id="buy" type="number" inputmode="numeric" min="0"></span>
+    </label>
+    <div class="two">
+      <label for="pt">つくポイント <span class="help">ポイントは値引きと同じに数えます</span>
+        <span class="yen" id="ptWrap"><input id="pt" type="number" inputmode="decimal" min="0"></span>
+      </label>
+      <div class="seg" role="group" aria-label="ポイントの単位">
+        <button type="button" id="ptPct" aria-pressed="true">%</button>
+        <button type="button" id="ptYen" aria-pressed="false">円</button>
+      </div>
+    </div>
+    <label for="sell">売れそうな値段 <span class="help">メルカリで「売り切れ」の値段を見るのが一番確か</span>
+      <span class="yen"><input id="sell" type="number" inputmode="numeric" min="0"></span>
+    </label>
+    <label for="ship">送り方
+      <select id="ship"></select>
+    </label>
+    <label for="shipCustom" id="shipCustomWrap" hidden>送料
+      <span class="yen"><input id="shipCustom" type="number" inputmode="numeric" min="0"></span>
+    </label>
+  </section>
+
+  <details id="settings">
+    <summary>設定（手数料・判定の基準）</summary>
+    <div class="card">
+      <label for="fee">売る場所の手数料 <span class="help">メルカリは10%</span>
+        <span class="yen pct"><input id="fee" type="number" inputmode="decimal" min="0" max="50"></span>
+      </label>
+      <label for="pack">梱包材など（1個あたり）
+        <span class="yen"><input id="pack" type="number" inputmode="numeric" min="0"></span>
+      </label>
+      <label for="goalYen">「仕入れOK」にする もうけ
+        <span class="yen"><input id="goalYen" type="number" inputmode="numeric" min="0"></span>
+      </label>
+      <label for="goalPct">「仕入れOK」にする もうけ率 <span class="help">売れた値段のうち、もうけが何%か</span>
+        <span class="yen pct"><input id="goalPct" type="number" inputmode="decimal" min="0" max="80"></span>
+      </label>
+    </div>
+  </details>
+
+  <p class="foot">
+    ・送料は 2026年11月の目安です。正しい値段はメルカリのアプリで確かめてください。<br>
+    ・売れるまでの日数や、値下げされる心配は入っていません。よく売れている商品ほど安心です。<br>
+    ・入れた設定はこのスマホの中だけに残ります。
+  </p>
+</div>
+
+<script>
+(function(){
+  const SHIP=[
+    ["ネコポス（A4・厚さ3cmまで）",210],
+    ["ゆうパケットポスト（専用箱など）",215],
+    ["宅急便コンパクト（箱代70円込み）",520],
+    ["宅急便 60サイズ",750],
+    ["宅急便 80サイズ",850],
+    ["宅急便 100サイズ",1050],
+    ["その他（自分で入力）",null]
+  ];
+  const $=id=>document.getElementById(id);
+  const shipSel=$("ship");
+  SHIP.forEach(([n,p],i)=>{const o=document.createElement("option");o.value=i;o.textContent=p==null?n:n+"　"+p+"円";shipSel.appendChild(o);});
+
+  const DEF={fee:10,pack:50,goalYen:500,goalPct:15};
+  const EX={name:"ワイヤレスイヤホン（例）",buy:6980,pt:10,ptUnit:"pct",sell:9800,ship:2,shipCustom:""};
+  let ptUnit="pct";
+
+  function load(){try{return JSON.parse(localStorage.getItem("sedori-settings")||"{}")}catch(e){return{}}}
+  function save(){try{localStorage.setItem("sedori-settings",JSON.stringify({fee:+$("fee").value,pack:+$("pack").value,goalYen:+$("goalYen").value,goalPct:+$("goalPct").value}))}catch(e){}}
+  const s=Object.assign({},DEF,load());
+  ["fee","pack","goalYen","goalPct"].forEach(k=>$(k).value=s[k]);
+
+  function setUnit(u){ptUnit=u;$("ptPct").setAttribute("aria-pressed",u==="pct");$("ptYen").setAttribute("aria-pressed",u==="yen");$("ptWrap").classList.toggle("pct",u==="pct");calc();}
+  function fill(d){$("name").value=d.name;$("buy").value=d.buy;$("pt").value=d.pt;$("sell").value=d.sell;shipSel.value=d.ship;$("shipCustom").value=d.shipCustom;setUnit(d.ptUnit);}
+
+  const yen=n=>(n<0?"−":"")+Math.abs(Math.round(n)).toLocaleString("ja-JP")+"円";
+  const v=id=>{const x=parseFloat($(id).value);return isFinite(x)&&x>0?x:0};
+
+  function calc(){
+    const buy=v("buy"), sell=v("sell"), r=v("fee")/100, pack=v("pack");
+    const gY=v("goalYen"), gP=v("goalPct")/100;
+    const opt=SHIP[+shipSel.value]; $("shipCustomWrap").hidden=opt[1]!=null;
+    const ship=opt[1]!=null?opt[1]:v("shipCustom");
+    const ptYen=ptUnit==="pct"?Math.floor(buy*v("pt")/100):v("pt");
+    const cost=buy-ptYen;
+    const fee=Math.floor(sell*r);
+    const profit=sell-fee-ship-pack-cost;
+    const rate=sell>0?profit/sell:0;
+
+    const box=$("verdict"); let cls,label,note;
+    if(!buy||!sell){cls="mid";label="入力してください";note="買う値段と売れそうな値段を入れると、もうけが出ます。";}
+    else if(profit>=gY&&rate>=gP){cls="ok";label="仕入れOK";note="基準（"+yen(gY)+"以上・"+Math.round(gP*100)+"%以上）をこえています。";}
+    else if(profit>0){cls="mid";label="ぎりぎり";note="もうけは出ますが基準（"+yen(gY)+"以上・"+Math.round(gP*100)+"%以上）に届きません。値下げされると赤字の心配があります。";}
+    else{cls="ng";label="見送り";note="手数料と送料を引くと、もうけが出ません。";}
+    box.className="verdict "+cls; $("vLabel").textContent=label;
+    $("vProfit").textContent=(buy&&sell)?(profit>=0?"+":"")+yen(profit)+(sell?"（"+Math.round(rate*100)+"%）":""):"−";
+    $("vNote").textContent=note;
+
+    $("breakdown").innerHTML=
+      row("売れた値段",yen(sell))+row("手数料 "+Math.round(r*1000)/10+"%","−"+yen(fee))+row("送料","−"+yen(ship))+
+      row("梱包材など","−"+yen(pack))+row("買う値段","−"+yen(buy))+row("ポイント","+"+yen(ptYen))+
+      '<div class="row total"><span>もうけ</span><span class="num">'+yen(profit)+'</span></div>';
+
+    // 仕入れはいくらまで：sell−fee−ship−pack−max(gY,gP*sell) ≥ buy−pt
+    let maxBuy="-";
+    if(sell){const room=sell-fee-ship-pack-Math.max(gY,gP*sell);
+      if(room<=0)maxBuy="むずかしい";
+      else{const b=ptUnit==="pct"?room/(1-v("pt")/100):room+v("pt");maxBuy=yen(Math.floor(b/10)*10);}}
+    $("maxBuy").textContent=maxBuy;
+    // いくら以上で売る
+    let minSell="-";
+    if(buy){const base=ship+pack+cost; const d=1-r-gP;
+      if(d<=0)minSell="むずかしい";
+      else{let p=Math.max((gY+base)/(1-r),base/d);p=Math.ceil(p/10)*10;
+        while(p-Math.floor(p*r)-base<Math.max(gY,gP*p))p+=10;minSell=yen(p);}}
+    $("minSell").textContent=minSell;
+  }
+  function row(a,b){return '<div class="row"><span>'+a+'</span><span class="num">'+b+'</span></div>';}
+
+  ["name","buy","pt","sell","shipCustom"].forEach(id=>$(id).addEventListener("input",()=>{$("exTag").hidden=true;calc();}));
+  shipSel.addEventListener("change",calc);
+  ["fee","pack","goalYen","goalPct"].forEach(id=>$(id).addEventListener("input",()=>{save();calc();}));
+  $("ptPct").addEventListener("click",()=>setUnit("pct"));
+  $("ptYen").addEventListener("click",()=>setUnit("yen"));
+  $("clear").addEventListener("click",()=>{fill({name:"",buy:"",pt:"",ptUnit:"pct",sell:"",ship:0,shipCustom:""});$("exTag").hidden=true;$("buy").focus();});
+
+  fill(EX);
+})();
+</script>
+
+</body>
+</html>
