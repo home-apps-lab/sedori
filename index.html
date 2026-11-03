@@ -242,6 +242,17 @@ ul.tips{margin:0;padding-left:1.2em;display:grid;gap:6px;font-size:14px}
   <!-- ねらい目 -->
   <section class="view" id="view-nerai" hidden>
     <div class="updated" id="neraiUpdated"></div>
+    <h2>今の時期のおすすめ</h2>
+    <div class="list" id="pickList"></div>
+    <div class="card" style="gap:6px"><b style="font-size:14px">えらび方（この4つにあてはまるほど安心）</b>
+      <ul class="tips">
+        <li>型番がはっきりしている（メルカリで同じ商品を探せる）</li>
+        <li>メルカリの「売り切れ」が、この1か月で何件もある</li>
+        <li>楽天・Amazon のセールで値段がよく下がる</li>
+        <li>小さくて軽い（送料が安い）</li>
+      </ul>
+      <p class="foot" id="avoidText"></p>
+    </div>
     <h2>これからのセール</h2>
     <div class="list" id="evList"></div>
     <h2>今の時期のコツ</h2>
@@ -270,6 +281,14 @@ ul.tips{margin:0;padding-left:1.2em;display:grid;gap:6px;font-size:14px}
       {date:"12/4（金）ごろ 〜",title:"楽天スーパーセール",fix:false,
        note:"年に4回の大きなセール。半額品が多い。"}
     ],
+    picks:[
+      {name:"レゴ（定番のセット）",star:3,why:"クリスマスのおもちゃ人気で1位。型番で同じ商品を探せるので、売れた値段が調べやすい。もうすぐ売られなくなる（廃盤）セットは値上がりしやすい。",care:"箱がつぶれると値段が下がる。送るときは大きめの箱で。"},
+      {name:"知育玩具・プログラミングのおもちゃ",star:3,why:"クリスマスのおもちゃ人気で上位。親が「新品で」ほしがるので、新品せどりに向いている。",care:"12月20日ごろを過ぎると急に売れにくくなる。それまでに売り切る。"},
+      {name:"美容家電・マッサージ器（顔のスチーマー、目元・首のマッサージ器など）",star:2,why:"家電のプレゼント人気で2〜4位。小さくて送料が安い。セールで値段が大きく下がりやすい。",care:"同じ商品を出す人が多いと値下げ競争になる。メルカリで出品数を見てから。"},
+      {name:"冬の家電（加湿器・電気毛布）",star:2,why:"年末年始に強い。寒くなるほど売れる。",care:"大きいものは送料が高い。2月を過ぎると売れ残りやすいので、たくさん買わない。"},
+      {name:"スマートウォッチ",star:1,why:"家電のプレゼント人気で1位。",care:"新しい型が出ると古い型が一気に値下がりする。発売日を調べてから。"}
+    ],
+    avoid:"ポケモンカードなどのトレカ・人気ゲーム機（抽選や買い占めで問題になりやすい、偽物の心配）、ダウンジャケット（仕入れ値が高く、偽物を疑われやすい）",
     tips:[
       "11月のセールで仕入れて、12月上旬〜中旬（クリスマス前）に売るのがねらい目。おもちゃ・ゲームのソフト・家電・美容家電が動きやすい。",
       "セール中は同じ商品をメルカリに出す人も増えて、値段が下がりやすい。セールで買ったものを、すぐ同じセール中に売ろうとしない。",
@@ -284,7 +303,10 @@ ul.tips{margin:0;padding-left:1.2em;display:grid;gap:6px;font-size:14px}
     sources:[
       ["楽天お買い物マラソンの日程（アプリオ）","https://appllio.com/when-rakuten-shopping-marathon"],
       ["ブラックフライデー2026の予想（Goal）","https://www.goal.com/jp/%E3%83%8B%E3%83%A5%E3%83%BC%E3%82%B9/when-start-black-fryday-2026/bltf2ddc98b3d59a975"],
-      ["楽天スーパーセールの予想（DMS）","https://www.dm-s.co.jp/collect/rakuten-sale/"]
+      ["楽天スーパーセールの予想（DMS）","https://www.dm-s.co.jp/collect/rakuten-sale/"],
+      ["おもちゃのプレゼント人気（ベストプレゼント）","https://bestpresent.jp/christmas/toys/"],
+      ["家電のプレゼント人気（ベストプレゼント）","https://bestpresent.jp/christmas/digitalappliances/"],
+      ["冬に売れるジャンル（ソレウル）","https://soreuru.jp/sedori-ranking/"]
     ]
   };
 
@@ -463,6 +485,8 @@ ul.tips{margin:0;padding-left:1.2em;display:grid;gap:6px;font-size:14px}
   $("neraiUpdated").textContent=md(NERAI.updated)+" に調べた内容です";
   $("evList").innerHTML=NERAI.events.map(e=>'<div class="ev"><span class="ev-date">'+esc(e.date)+'</span><span class="ev-title">'+esc(e.title)+
     '<span class="tag '+(e.fix?"fix":"guess")+'">'+(e.fix?"決まり":"予想")+'</span></span><p>'+esc(e.note)+'</p></div>').join("");
+  $("pickList").innerHTML=NERAI.picks.map(p=>'<div class="ev"><span class="ev-title">'+esc(p.name)+'<span class="tag fix" aria-label="おすすめ度 '+p.star+'">'+"★".repeat(p.star)+"☆".repeat(3-p.star)+'</span></span><p>'+esc(p.why)+'</p><p class="item-meta">注意：'+esc(p.care)+'</p></div>').join("");
+  $("avoidText").textContent="さけたいもの："+NERAI.avoid;
   $("tipList").innerHTML=NERAI.tips.map(t=>"<li>"+esc(t)+"</li>").join("");
   $("warnList").innerHTML=NERAI.warns.map(t=>"<li>"+esc(t)+"</li>").join("");
   $("srcList").innerHTML="参考："+NERAI.sources.map(([n,u])=>'<a href="'+esc(u)+'" target="_blank" rel="noopener">'+esc(n)+'</a>').join("　");
