@@ -11,7 +11,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Zen+Kaku+Gothic+New:wght@400;500;700&family=IBM+Plex+Mono:wght@500;600&display=swap">
 <style>
-/* 値札とレシートの世界：上に答え（判定）、下に入力。1列で親指だけで使える */
+/* 値札とレシートの世界：上にタブ、各画面は答え（判定・合計）が先、入力や一覧が後。1列で親指だけで使える */
 :root{
   --bg:#f3f5f2; --card:#ffffff; --fg:#1d2420; --muted:#5f6b64; --line:#d5ddd7;
   --accent:#1f6b52; --accent-soft:#e2efe9;
@@ -33,8 +33,15 @@ body{background:var(--bg);color:var(--fg);font-family:var(--f-body);font-size:16
 .wrap{max-width:520px;margin:0 auto;display:grid;gap:16px}
 header{display:flex;align-items:baseline;justify-content:space-between;gap:8px;flex-wrap:wrap}
 h1{font-size:22px;margin:0;letter-spacing:.04em;text-wrap:balance}
+h2{font-size:17px;margin:0;text-wrap:balance}
 .sub{color:var(--muted);font-size:13px}
 .num{font-family:var(--f-num);font-variant-numeric:tabular-nums}
+.view{display:grid;gap:16px}
+
+/* タブ */
+.tabs{display:grid;grid-template-columns:repeat(3,1fr);border:1px solid var(--line);border-radius:12px;overflow:hidden;background:var(--card)}
+.tabs button{font:inherit;font-size:15px;border:0;background:transparent;color:var(--fg);padding:11px 4px;cursor:pointer}
+.tabs button[aria-selected="true"]{background:var(--accent);color:var(--card);font-weight:700}
 
 /* 判定（値札） */
 .verdict{border-radius:14px;padding:16px;display:grid;gap:10px;border:2px solid currentColor}
@@ -58,22 +65,59 @@ h1{font-size:22px;margin:0;letter-spacing:.04em;text-wrap:balance}
 label{display:grid;gap:4px;font-size:14px;font-weight:500}
 label .help{font-weight:400;color:var(--muted);font-size:12px}
 input,select{font:inherit;font-size:18px;width:100%;padding:10px 12px;border:1px solid var(--line);border-radius:10px;background:var(--bg);color:var(--fg);min-width:0}
-input:focus-visible,select:focus-visible,button:focus-visible,summary:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+input[type="date"]{font-family:var(--f-num);font-size:16px}
+input:focus-visible,select:focus-visible,button:focus-visible,summary:focus-visible,a:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
 .yen{position:relative}
 .yen input{padding-right:40px;font-family:var(--f-num)}
 .yen::after{content:"円";position:absolute;right:12px;top:50%;transform:translateY(-50%);color:var(--muted);font-size:14px}
 .yen.pct::after{content:"%"}
 .two{display:grid;grid-template-columns:1fr auto;gap:8px;align-items:end}
+.pair{display:grid;grid-template-columns:1fr 1fr;gap:8px}
 .seg{display:flex;border:1px solid var(--line);border-radius:10px;overflow:hidden}
 .seg button{font:inherit;font-size:15px;border:0;background:var(--bg);color:var(--fg);padding:11px 14px;cursor:pointer}
 .seg button[aria-pressed="true"]{background:var(--accent);color:var(--card);font-weight:700}
-.btns{display:flex;gap:8px;flex-wrap:wrap}
+.btns{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
 .btn{font:inherit;font-size:15px;padding:10px 16px;border-radius:10px;border:1px solid var(--accent);background:var(--card);color:var(--accent);cursor:pointer}
+.btn.main{background:var(--accent);color:var(--card);font-weight:700;width:100%;padding:13px}
+.btn.small{font-size:13px;padding:6px 12px}
+.btn.danger{border-color:var(--ng);color:var(--ng)}
 .example{font-size:12px;color:var(--accent);background:var(--accent-soft);border-radius:999px;padding:2px 10px}
 details{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:12px 16px}
 summary{cursor:pointer;font-weight:700}
 details .card{border:0;padding:12px 0 0}
-.foot{color:var(--muted);font-size:12px;line-height:1.6}
+.foot{color:var(--muted);font-size:12px;line-height:1.6;margin:0}
+.toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--fg);color:var(--bg);padding:10px 18px;border-radius:999px;font-size:14px;z-index:20}
+
+/* 記録 */
+.sum{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.sum div{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:10px;min-width:0}
+.sum small{display:block;color:var(--muted);font-size:12px}
+.sum b{font-size:17px;display:block;overflow-wrap:anywhere}
+.sum .big{grid-column:1/-1;border:2px solid var(--accent)}
+.sum .big b{font-size:26px;color:var(--accent)}
+.list{display:grid;gap:8px}
+.item{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px;display:grid;gap:8px}
+.item-top{display:flex;justify-content:space-between;gap:10px;align-items:baseline}
+.item-name{font-weight:700;min-width:0;overflow-wrap:anywhere}
+.item-meta{color:var(--muted);font-size:13px}
+.pill{font-size:12px;border-radius:999px;padding:1px 9px;white-space:nowrap}
+.pill.stock{background:var(--mid-bg);color:var(--mid)}
+.pill.sold{background:var(--ok-bg);color:var(--ok)}
+.plus{color:var(--ok)} .minus{color:var(--ng)}
+.empty{color:var(--muted);font-size:14px;background:var(--card);border:1px dashed var(--line);border-radius:12px;padding:14px}
+.sellform{display:grid;gap:10px;border-top:1px dashed var(--line);padding-top:10px}
+
+/* ねらい目 */
+.updated{color:var(--muted);font-size:13px}
+.ev{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px 14px;display:grid;gap:4px}
+.ev-date{font-family:var(--f-num);font-size:14px;color:var(--accent);font-weight:600}
+.ev-title{font-weight:700;display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.tag{font-size:11px;border-radius:999px;padding:1px 8px;font-weight:500}
+.tag.fix{background:var(--ok-bg);color:var(--ok)}
+.tag.guess{background:var(--mid-bg);color:var(--mid)}
+.ev p{margin:0;font-size:14px}
+ul.tips{margin:0;padding-left:1.2em;display:grid;gap:6px;font-size:14px}
+.src a{color:var(--accent);font-size:12px;overflow-wrap:anywhere}
 @media (prefers-reduced-motion:no-preference){.verdict{transition:background .2s,color .2s}}
 </style>
 
@@ -85,77 +129,165 @@ details .card{border:0;padding:12px 0 0}
     <span class="sub">新品・メルカリ向け</span>
   </header>
 
-  <section id="verdict" class="verdict ok" aria-live="polite">
-    <div class="v-top">
-      <span class="v-label" id="vLabel">仕入れOK</span>
-      <span class="v-profit num" id="vProfit">+0円</span>
-    </div>
-    <div class="v-note" id="vNote"></div>
-    <div class="breakdown" id="breakdown"></div>
-    <div class="hints">
-      <div class="hint"><small>この値段で売るなら<br>仕入れはいくらまで</small><b class="num" id="maxBuy">-</b></div>
-      <div class="hint"><small>この仕入れなら<br>いくら以上で売る</small><b class="num" id="minSell">-</b></div>
-    </div>
-  </section>
+  <nav class="tabs" role="tablist" aria-label="画面">
+    <button type="button" role="tab" id="tab-calc" aria-selected="true">計算</button>
+    <button type="button" role="tab" id="tab-log" aria-selected="false">記録</button>
+    <button type="button" role="tab" id="tab-nerai" aria-selected="false">ねらい目</button>
+  </nav>
 
-  <section class="card" aria-label="入力">
-    <div class="btns" style="justify-content:space-between;align-items:center">
-      <span class="example" id="exTag">いまは例が入っています</span>
-      <button class="btn" id="clear" type="button">新しく入力する</button>
-    </div>
-    <label for="name">商品名 <span class="help">メモ用。なくてもOK</span>
-      <input id="name" type="text" placeholder="例：ワイヤレスイヤホン">
-    </label>
-    <label for="buy">買う値段（税込）
-      <span class="yen"><input id="buy" type="number" inputmode="numeric" min="0"></span>
-    </label>
-    <div class="two">
-      <label for="pt">つくポイント <span class="help">ポイントは値引きと同じに数えます</span>
-        <span class="yen" id="ptWrap"><input id="pt" type="number" inputmode="decimal" min="0"></span>
-      </label>
-      <div class="seg" role="group" aria-label="ポイントの単位">
-        <button type="button" id="ptPct" aria-pressed="true">%</button>
-        <button type="button" id="ptYen" aria-pressed="false">円</button>
+  <!-- 計算 -->
+  <section class="view" id="view-calc">
+    <section id="verdict" class="verdict ok" aria-live="polite">
+      <div class="v-top">
+        <span class="v-label" id="vLabel">仕入れOK</span>
+        <span class="v-profit num" id="vProfit">+0円</span>
       </div>
-    </div>
-    <label for="sell">売れそうな値段 <span class="help">メルカリで「売り切れ」の値段を見るのが一番確か</span>
-      <span class="yen"><input id="sell" type="number" inputmode="numeric" min="0"></span>
-    </label>
-    <label for="ship">送り方
-      <select id="ship"></select>
-    </label>
-    <label for="shipCustom" id="shipCustomWrap" hidden>送料
-      <span class="yen"><input id="shipCustom" type="number" inputmode="numeric" min="0"></span>
-    </label>
+      <div class="v-note" id="vNote"></div>
+      <div class="breakdown" id="breakdown"></div>
+      <div class="hints">
+        <div class="hint"><small>この値段で売るなら<br>仕入れはいくらまで</small><b class="num" id="maxBuy">-</b></div>
+        <div class="hint"><small>この仕入れなら<br>いくら以上で売る</small><b class="num" id="minSell">-</b></div>
+      </div>
+    </section>
+
+    <section class="card" aria-label="入力">
+      <div class="btns" style="justify-content:space-between">
+        <span class="example" id="exTag">いまは例が入っています</span>
+        <button class="btn" id="clear" type="button">新しく入力する</button>
+      </div>
+      <label for="name">商品名 <span class="help">記録に入れるときに使います</span>
+        <input id="name" type="text" placeholder="例：ワイヤレスイヤホン">
+      </label>
+      <label for="buy">買う値段（税込）
+        <span class="yen"><input id="buy" type="number" inputmode="numeric" min="0"></span>
+      </label>
+      <div class="two">
+        <label for="pt">つくポイント <span class="help">ポイントは値引きと同じに数えます</span>
+          <span class="yen" id="ptWrap"><input id="pt" type="number" inputmode="decimal" min="0"></span>
+        </label>
+        <div class="seg" role="group" aria-label="ポイントの単位">
+          <button type="button" id="ptPct" aria-pressed="true">%</button>
+          <button type="button" id="ptYen" aria-pressed="false">円</button>
+        </div>
+      </div>
+      <label for="sell">売れそうな値段 <span class="help">メルカリで「売り切れ」の値段を見るのが一番確か</span>
+        <span class="yen"><input id="sell" type="number" inputmode="numeric" min="0"></span>
+      </label>
+      <label for="ship">送り方
+        <select id="ship"></select>
+      </label>
+      <label for="shipCustom" id="shipCustomWrap" hidden>送料
+        <span class="yen"><input id="shipCustom" type="number" inputmode="numeric" min="0"></span>
+      </label>
+      <button class="btn main" id="toLog" type="button">買ったので記録に入れる</button>
+    </section>
+
+    <details id="settings">
+      <summary>設定（手数料・判定の基準）</summary>
+      <div class="card">
+        <label for="fee">売る場所の手数料 <span class="help">メルカリは10%</span>
+          <span class="yen pct"><input id="fee" type="number" inputmode="decimal" min="0" max="50"></span>
+        </label>
+        <label for="pack">梱包材など（1個あたり）
+          <span class="yen"><input id="pack" type="number" inputmode="numeric" min="0"></span>
+        </label>
+        <label for="goalYen">「仕入れOK」にする もうけ
+          <span class="yen"><input id="goalYen" type="number" inputmode="numeric" min="0"></span>
+        </label>
+        <label for="goalPct">「仕入れOK」にする もうけ率 <span class="help">売れた値段のうち、もうけが何%か</span>
+          <span class="yen pct"><input id="goalPct" type="number" inputmode="decimal" min="0" max="80"></span>
+        </label>
+      </div>
+    </details>
+
+    <p class="foot">
+      ・送料は 2026年11月の目安です。正しい値段はメルカリのアプリで確かめてください。<br>
+      ・売れるまでの日数や、値下げされる心配は入っていません。よく売れている商品ほど安心です。<br>
+      ・入れた設定や記録はこのスマホの中だけに残ります。
+    </p>
   </section>
 
-  <details id="settings">
-    <summary>設定（手数料・判定の基準）</summary>
-    <div class="card">
-      <label for="fee">売る場所の手数料 <span class="help">メルカリは10%</span>
-        <span class="yen pct"><input id="fee" type="number" inputmode="decimal" min="0" max="50"></span>
-      </label>
-      <label for="pack">梱包材など（1個あたり）
-        <span class="yen"><input id="pack" type="number" inputmode="numeric" min="0"></span>
-      </label>
-      <label for="goalYen">「仕入れOK」にする もうけ
-        <span class="yen"><input id="goalYen" type="number" inputmode="numeric" min="0"></span>
-      </label>
-      <label for="goalPct">「仕入れOK」にする もうけ率 <span class="help">売れた値段のうち、もうけが何%か</span>
-        <span class="yen pct"><input id="goalPct" type="number" inputmode="decimal" min="0" max="80"></span>
-      </label>
+  <!-- 記録 -->
+  <section class="view" id="view-log" hidden>
+    <div class="sum">
+      <div class="big"><small id="yearLabel">今年のもうけ</small><b class="num" id="sYear">0円</b></div>
+      <div><small>今月の売上</small><b class="num" id="sMonthSales">0円</b></div>
+      <div><small>今月のもうけ</small><b class="num" id="sMonth">0円</b></div>
+      <div><small>売れ残り</small><b class="num" id="sStock">0個</b></div>
     </div>
-  </details>
 
-  <p class="foot">
-    ・送料は 2026年11月の目安です。正しい値段はメルカリのアプリで確かめてください。<br>
-    ・売れるまでの日数や、値下げされる心配は入っていません。よく売れている商品ほど安心です。<br>
-    ・入れた設定はこのスマホの中だけに残ります。
-  </p>
+    <h2>まだ売れていないもの</h2>
+    <div class="list" id="stockList"></div>
+
+    <h2>売れたもの</h2>
+    <div class="list" id="soldList"></div>
+
+    <details>
+      <summary>バックアップ・確定申告用</summary>
+      <div class="card">
+        <p class="foot" style="color:var(--fg)">記録はこのスマホの中だけにあります。機種変更やデータ削除で消えないよう、ときどき保存してください。</p>
+        <div class="btns">
+          <button class="btn" type="button" id="backup">バックアップを保存</button>
+          <button class="btn" type="button" id="restoreBtn">バックアップから戻す</button>
+          <input type="file" id="restoreFile" accept=".json,application/json" hidden>
+        </div>
+        <div class="btns">
+          <button class="btn" type="button" id="csv">売れたものを表にして保存（CSV）</button>
+        </div>
+        <p class="foot">会社員の方は、1年間のもうけ（経費を引いたあと）が20万円をこえると確定申告がいります。20万円以下でも住民税の申告がいることがあります。くわしくは税務署や市役所で確かめてください。</p>
+      </div>
+    </details>
+  </section>
+
+  <!-- ねらい目 -->
+  <section class="view" id="view-nerai" hidden>
+    <div class="updated" id="neraiUpdated"></div>
+    <h2>これからのセール</h2>
+    <div class="list" id="evList"></div>
+    <h2>今の時期のコツ</h2>
+    <div class="card"><ul class="tips" id="tipList"></ul></div>
+    <h2>気をつけること</h2>
+    <div class="card"><ul class="tips" id="warnList"></ul></div>
+    <div class="src" id="srcList"></div>
+    <p class="foot">「予想」は過去の傾向からの見込みです。決まった日程はお店の公式ページで確かめてください。毎週 Claude が調べ直して入れかえます。</p>
+  </section>
 </div>
+
+<div class="toast" id="toast" hidden></div>
 
 <script>
 (function(){
+  // ===== ねらい目（Claude が毎週ここを書きかえる） =====
+  const NERAI={
+    updated:"2026-11-04",
+    events:[
+      {date:"11/4（水）20:00 〜 11/11（水）1:59",title:"楽天 お買い物マラソン",fix:true,
+       note:"買ったお店の数が多いほどポイントが上がる（細かい決まりは楽天のエントリーページで確かめる）。11/5・11/10（5と0のつく日）はさらに上乗せ。"},
+      {date:"11/20（金）ごろ 〜 11/27（金）ごろ",title:"楽天 ブラックフライデー",fix:false,
+       note:"毎年この時期。マラソンと同じく、お店をまたいで買うとポイントが上がる形の見込み。"},
+      {date:"11月下旬 〜 12月はじめ",title:"Amazon ブラックフライデー",fix:false,
+       note:"日程はまだ発表されていない。11/20〜25ごろに先行セール、11月末から本セールという予想が多い。"},
+      {date:"12/4（金）ごろ 〜",title:"楽天スーパーセール",fix:false,
+       note:"年に4回の大きなセール。半額品が多い。"}
+    ],
+    tips:[
+      "11月のセールで仕入れて、12月上旬〜中旬（クリスマス前）に売るのがねらい目。おもちゃ・ゲームのソフト・家電・美容家電が動きやすい。",
+      "セール中は同じ商品をメルカリに出す人も増えて、値段が下がりやすい。セールで買ったものを、すぐ同じセール中に売ろうとしない。",
+      "仕入れる前に、メルカリで商品名を調べて「売り切れ」だけを表示。最近の売れた値段と、売れている数を見る。",
+      "楽天のポイントは「期間限定ポイント」が多い。次の仕入れに使う予定を立てておく。"
+    ],
+    warns:[
+      "「お一人様1点まで」の品を何度も買わない。お店の決まりに反し、アカウントが止められることがある。",
+      "人気ゲーム機・限定品の買い占めはしない。",
+      "年末年始は配送が遅れやすい。12月後半に売れたものは早めに送る。"
+    ],
+    sources:[
+      ["楽天お買い物マラソンの日程（アプリオ）","https://appllio.com/when-rakuten-shopping-marathon"],
+      ["ブラックフライデー2026の予想（Goal）","https://www.goal.com/jp/%E3%83%8B%E3%83%A5%E3%83%BC%E3%82%B9/when-start-black-fryday-2026/bltf2ddc98b3d59a975"],
+      ["楽天スーパーセールの予想（DMS）","https://www.dm-s.co.jp/collect/rakuten-sale/"]
+    ]
+  };
+
   const SHIP=[
     ["ネコポス（A4・厚さ3cmまで）",210],
     ["ゆうパケットポスト（専用箱など）",215],
@@ -166,73 +298,177 @@ details .card{border:0;padding:12px 0 0}
     ["その他（自分で入力）",null]
   ];
   const $=id=>document.getElementById(id);
+  const esc=s=>String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+  const yen=n=>(n<0?"−":"")+Math.abs(Math.round(n)).toLocaleString("ja-JP")+"円";
+  const today=()=>{const d=new Date();return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0")};
+  const md=s=>s?(+s.slice(5,7))+"/"+(+s.slice(8,10)):"";
+  function toast(t){const e=$("toast");e.textContent=t;e.hidden=false;clearTimeout(toast.t);toast.t=setTimeout(()=>e.hidden=true,2200);}
+  function lsGet(k,d){try{const v=localStorage.getItem(k);return v?JSON.parse(v):d}catch(e){return d}}
+  function lsSet(k,v){try{localStorage.setItem(k,JSON.stringify(v));return true}catch(e){return false}}
+
+  // ===== タブ =====
+  const TABS=["calc","log","nerai"];
+  function show(t){TABS.forEach(x=>{$("tab-"+x).setAttribute("aria-selected",x===t);$("view-"+x).hidden=x!==t;});lsSet("sedori-tab",t);if(t==="log")renderLog();}
+  TABS.forEach(x=>$("tab-"+x).addEventListener("click",()=>show(x)));
+
+  // ===== 計算 =====
   const shipSel=$("ship");
   SHIP.forEach(([n,p],i)=>{const o=document.createElement("option");o.value=i;o.textContent=p==null?n:n+"　"+p+"円";shipSel.appendChild(o);});
-
   const DEF={fee:10,pack:50,goalYen:500,goalPct:15};
   const EX={name:"ワイヤレスイヤホン（例）",buy:6980,pt:10,ptUnit:"pct",sell:9800,ship:2,shipCustom:""};
-  let ptUnit="pct";
-
-  function load(){try{return JSON.parse(localStorage.getItem("sedori-settings")||"{}")}catch(e){return{}}}
-  function save(){try{localStorage.setItem("sedori-settings",JSON.stringify({fee:+$("fee").value,pack:+$("pack").value,goalYen:+$("goalYen").value,goalPct:+$("goalPct").value}))}catch(e){}}
-  const s=Object.assign({},DEF,load());
+  let ptUnit="pct", isExample=true;
+  const s=Object.assign({},DEF,lsGet("sedori-settings",{}));
   ["fee","pack","goalYen","goalPct"].forEach(k=>$(k).value=s[k]);
-
+  function saveSettings(){lsSet("sedori-settings",{fee:+$("fee").value,pack:+$("pack").value,goalYen:+$("goalYen").value,goalPct:+$("goalPct").value});}
   function setUnit(u){ptUnit=u;$("ptPct").setAttribute("aria-pressed",u==="pct");$("ptYen").setAttribute("aria-pressed",u==="yen");$("ptWrap").classList.toggle("pct",u==="pct");calc();}
   function fill(d){$("name").value=d.name;$("buy").value=d.buy;$("pt").value=d.pt;$("sell").value=d.sell;shipSel.value=d.ship;$("shipCustom").value=d.shipCustom;setUnit(d.ptUnit);}
-
-  const yen=n=>(n<0?"−":"")+Math.abs(Math.round(n)).toLocaleString("ja-JP")+"円";
   const v=id=>{const x=parseFloat($(id).value);return isFinite(x)&&x>0?x:0};
-
-  function calc(){
+  function cur(){
     const buy=v("buy"), sell=v("sell"), r=v("fee")/100, pack=v("pack");
-    const gY=v("goalYen"), gP=v("goalPct")/100;
-    const opt=SHIP[+shipSel.value]; $("shipCustomWrap").hidden=opt[1]!=null;
+    const opt=SHIP[+shipSel.value];
     const ship=opt[1]!=null?opt[1]:v("shipCustom");
     const ptYen=ptUnit==="pct"?Math.floor(buy*v("pt")/100):v("pt");
-    const cost=buy-ptYen;
-    const fee=Math.floor(sell*r);
-    const profit=sell-fee-ship-pack-cost;
-    const rate=sell>0?profit/sell:0;
-
+    return {buy,sell,r,pack,ship,ptYen,shipName:opt[0]};
+  }
+  function calc(){
+    const {buy,sell,r,pack,ship,ptYen}=cur();
+    const gY=v("goalYen"), gP=v("goalPct")/100;
+    $("shipCustomWrap").hidden=SHIP[+shipSel.value][1]!=null;
+    const cost=buy-ptYen, fee=Math.floor(sell*r);
+    const profit=sell-fee-ship-pack-cost, rate=sell>0?profit/sell:0;
     const box=$("verdict"); let cls,label,note;
+    const base="基準（"+yen(gY)+"以上・"+Math.round(gP*100)+"%以上）";
     if(!buy||!sell){cls="mid";label="入力してください";note="買う値段と売れそうな値段を入れると、もうけが出ます。";}
-    else if(profit>=gY&&rate>=gP){cls="ok";label="仕入れOK";note="基準（"+yen(gY)+"以上・"+Math.round(gP*100)+"%以上）をこえています。";}
-    else if(profit>0){cls="mid";label="ぎりぎり";note="もうけは出ますが基準（"+yen(gY)+"以上・"+Math.round(gP*100)+"%以上）に届きません。値下げされると赤字の心配があります。";}
+    else if(profit>=gY&&rate>=gP){cls="ok";label="仕入れOK";note=base+"をこえています。";}
+    else if(profit>0){cls="mid";label="ぎりぎり";note="もうけは出ますが"+base+"に届きません。値下げされると赤字の心配があります。";}
     else{cls="ng";label="見送り";note="手数料と送料を引くと、もうけが出ません。";}
     box.className="verdict "+cls; $("vLabel").textContent=label;
-    $("vProfit").textContent=(buy&&sell)?(profit>=0?"+":"")+yen(profit)+(sell?"（"+Math.round(rate*100)+"%）":""):"−";
+    $("vProfit").textContent=(buy&&sell)?(profit>=0?"+":"")+yen(profit)+"（"+Math.round(rate*100)+"%）":"−";
     $("vNote").textContent=note;
-
     $("breakdown").innerHTML=
       row("売れた値段",yen(sell))+row("手数料 "+Math.round(r*1000)/10+"%","−"+yen(fee))+row("送料","−"+yen(ship))+
       row("梱包材など","−"+yen(pack))+row("買う値段","−"+yen(buy))+row("ポイント","+"+yen(ptYen))+
       '<div class="row total"><span>もうけ</span><span class="num">'+yen(profit)+'</span></div>';
-
-    // 仕入れはいくらまで：sell−fee−ship−pack−max(gY,gP*sell) ≥ buy−pt
     let maxBuy="-";
     if(sell){const room=sell-fee-ship-pack-Math.max(gY,gP*sell);
       if(room<=0)maxBuy="むずかしい";
       else{const b=ptUnit==="pct"?room/(1-v("pt")/100):room+v("pt");maxBuy=yen(Math.floor(b/10)*10);}}
     $("maxBuy").textContent=maxBuy;
-    // いくら以上で売る
     let minSell="-";
-    if(buy){const base=ship+pack+cost; const d=1-r-gP;
+    if(buy){const b2=ship+pack+cost, d=1-r-gP;
       if(d<=0)minSell="むずかしい";
-      else{let p=Math.max((gY+base)/(1-r),base/d);p=Math.ceil(p/10)*10;
-        while(p-Math.floor(p*r)-base<Math.max(gY,gP*p))p+=10;minSell=yen(p);}}
+      else{let p=Math.max((gY+b2)/(1-r),b2/d);p=Math.ceil(p/10)*10;
+        while(p-Math.floor(p*r)-b2<Math.max(gY,gP*p))p+=10;minSell=yen(p);}}
     $("minSell").textContent=minSell;
   }
   function row(a,b){return '<div class="row"><span>'+a+'</span><span class="num">'+b+'</span></div>';}
-
-  ["name","buy","pt","sell","shipCustom"].forEach(id=>$(id).addEventListener("input",()=>{$("exTag").hidden=true;calc();}));
-  shipSel.addEventListener("change",calc);
-  ["fee","pack","goalYen","goalPct"].forEach(id=>$(id).addEventListener("input",()=>{save();calc();}));
+  ["name","buy","pt","sell","shipCustom"].forEach(id=>$(id).addEventListener("input",()=>{isExample=false;$("exTag").hidden=true;calc();}));
+  shipSel.addEventListener("change",()=>{isExample=false;$("exTag").hidden=true;calc();});
+  ["fee","pack","goalYen","goalPct"].forEach(id=>$(id).addEventListener("input",()=>{saveSettings();calc();}));
   $("ptPct").addEventListener("click",()=>setUnit("pct"));
   $("ptYen").addEventListener("click",()=>setUnit("yen"));
-  $("clear").addEventListener("click",()=>{fill({name:"",buy:"",pt:"",ptUnit:"pct",sell:"",ship:0,shipCustom:""});$("exTag").hidden=true;$("buy").focus();});
+  $("clear").addEventListener("click",()=>{fill({name:"",buy:"",pt:"",ptUnit:"pct",sell:"",ship:0,shipCustom:""});isExample=false;$("exTag").hidden=true;$("buy").focus();});
+
+  // ===== 記録 =====
+  let items=lsGet("sedori-items",[]);
+  function saveItems(){if(!lsSet("sedori-items",items))toast("保存できませんでした。ホーム画面のアイコンから開いてください");}
+  const profitOf=it=>it.sell-Math.floor(it.sell*it.r)-it.ship-it.pack-(it.buy-it.pt);
+
+  $("toLog").addEventListener("click",()=>{
+    const c=cur();
+    if(isExample){toast("例のままです。「新しく入力する」で入れ直してください");return;}
+    if(!c.buy){toast("買う値段を入れてください");$("buy").focus();return;}
+    items.push({id:Date.now()+"",name:$("name").value.trim()||"（名前なし）",buyDate:today(),buy:c.buy,pt:c.ptYen,
+      expSell:c.sell,ship:c.ship,pack:c.pack,r:c.r,status:"stock",sell:0,sellDate:""});
+    saveItems();toast("記録に入れました");
+  });
+
+  let openSell=null, armDel=null;
+  function renderLog(){
+    const y=today().slice(0,4), m=today().slice(0,7);
+    const sold=items.filter(i=>i.status==="sold"), stock=items.filter(i=>i.status!=="sold");
+    const sumP=a=>a.reduce((t,i)=>t+profitOf(i),0);
+    $("yearLabel").textContent=(+y)+"年のもうけ";
+    $("sYear").textContent=yen(sumP(sold.filter(i=>i.sellDate.startsWith(y))));
+    const mon=sold.filter(i=>i.sellDate.startsWith(m));
+    $("sMonthSales").textContent=yen(mon.reduce((t,i)=>t+i.sell,0));
+    $("sMonth").textContent=yen(sumP(mon));
+    $("sStock").textContent=stock.length+"個";
+
+    $("stockList").innerHTML=stock.length?stock.slice().reverse().map(it=>{
+      const days=Math.floor((new Date(today())-new Date(it.buyDate))/864e5);
+      let h='<div class="item"><div class="item-top"><span class="item-name">'+esc(it.name)+'</span><span class="pill stock">'+(days>=30?days+"日たった":"売り出し中")+'</span></div>'+
+        '<div class="item-meta">'+md(it.buyDate)+' 買った　<span class="num">'+yen(it.buy)+'</span>（ポイント '+yen(it.pt)+'）　売りたい値段 <span class="num">'+yen(it.expSell)+'</span></div>';
+      if(openSell===it.id){
+        h+='<div class="sellform"><div class="pair"><label for="sp-'+it.id+'">売れた値段<span class="yen"><input id="sp-'+it.id+'" type="number" inputmode="numeric" value="'+(it.expSell||"")+'"></span></label>'+
+          '<label for="ss-'+it.id+'">送料<span class="yen"><input id="ss-'+it.id+'" type="number" inputmode="numeric" value="'+it.ship+'"></span></label></div>'+
+          '<label for="sd-'+it.id+'">売れた日<input id="sd-'+it.id+'" type="date" value="'+today()+'"></label>'+
+          '<div class="btns"><button class="btn main" type="button" data-act="sold" data-id="'+it.id+'">売れたとして記録</button></div>'+
+          '<div class="btns"><button class="btn small" type="button" data-act="cancel">やめる</button>'+
+          '<button class="btn small danger" type="button" data-act="del" data-id="'+it.id+'">'+(armDel===it.id?"もう一度押すと消えます":"この記録を消す")+'</button></div></div>';
+      }else{
+        h+='<div class="btns"><button class="btn small" type="button" data-act="open" data-id="'+it.id+'">売れた</button></div>';
+      }
+      return h+'</div>';
+    }).join(""):'<div class="empty">まだありません。「計算」の画面で「買ったので記録に入れる」を押すと、ここに出ます。</div>';
+
+    $("soldList").innerHTML=sold.length?sold.slice().sort((a,b)=>b.sellDate.localeCompare(a.sellDate)).map(it=>{
+      const p=profitOf(it);
+      return '<div class="item"><div class="item-top"><span class="item-name">'+esc(it.name)+'</span><span class="num '+(p>=0?"plus":"minus")+'">'+(p>=0?"+":"")+yen(p)+'</span></div>'+
+        '<div class="item-meta">'+md(it.sellDate)+' 売れた　<span class="num">'+yen(it.sell)+'</span>　（'+md(it.buyDate)+' に <span class="num">'+yen(it.buy)+'</span> で買った）</div>'+
+        '<div class="btns"><button class="btn small" type="button" data-act="unsell" data-id="'+it.id+'">売れていないに戻す</button></div></div>';
+    }).join(""):'<div class="empty">まだありません。</div>';
+  }
+  $("view-log").addEventListener("click",e=>{
+    const b=e.target.closest("button[data-act]"); if(!b)return;
+    const id=b.dataset.id, it=items.find(i=>i.id===id), act=b.dataset.act;
+    if(act!=="del")armDel=null;
+    if(act==="open"){openSell=id;}
+    else if(act==="cancel"){openSell=null;}
+    else if(act==="sold"&&it){
+      const sp=parseFloat($("sp-"+id).value), ss=parseFloat($("ss-"+id).value)||0, sd=$("sd-"+id).value||today();
+      if(!(sp>0)){toast("売れた値段を入れてください");return;}
+      Object.assign(it,{status:"sold",sell:sp,ship:ss,sellDate:sd});openSell=null;saveItems();toast("もうけ "+yen(profitOf(it)));
+    }
+    else if(act==="unsell"&&it){Object.assign(it,{status:"stock",sell:0,sellDate:""});saveItems();}
+    else if(act==="del"&&it){
+      if(armDel!==id){armDel=id;}
+      else{items=items.filter(i=>i.id!==id);armDel=null;openSell=null;saveItems();toast("消しました");}
+    }
+    renderLog();
+  });
+
+  function download(name,text,type){
+    const a=document.createElement("a");a.href=URL.createObjectURL(new Blob([text],{type}));a.download=name;
+    document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove();},1000);
+  }
+  $("backup").addEventListener("click",()=>{download("せどり計算帳_バックアップ_"+today()+".json",JSON.stringify({items,settings:lsGet("sedori-settings",{})}),"application/json");});
+  $("restoreBtn").addEventListener("click",()=>$("restoreFile").click());
+  $("restoreFile").addEventListener("change",e=>{
+    const f=e.target.files[0]; if(!f)return;
+    const rd=new FileReader();
+    rd.onload=()=>{try{const d=JSON.parse(rd.result);if(!Array.isArray(d.items))throw 0;
+      items=d.items;saveItems();if(d.settings){lsSet("sedori-settings",d.settings);["fee","pack","goalYen","goalPct"].forEach(k=>{if(d.settings[k]!=null)$(k).value=d.settings[k];});calc();}
+      renderLog();toast("戻しました（"+items.length+"件）");}catch(err){toast("このファイルは読めませんでした。バックアップのファイルを選んでください");}
+      e.target.value="";};
+    rd.readAsText(f);
+  });
+  $("csv").addEventListener("click",()=>{
+    const head=["売れた日","商品名","売れた値段","手数料","送料","梱包材など","買った日","買った値段","ポイント","もうけ"];
+    const rows=items.filter(i=>i.status==="sold").sort((a,b)=>a.sellDate.localeCompare(b.sellDate)).map(i=>[i.sellDate,'"'+i.name.replace(/"/g,'""')+'"',i.sell,Math.floor(i.sell*i.r),i.ship,i.pack,i.buyDate,i.buy,i.pt,profitOf(i)].join(","));
+    download("せどり計算帳_売れたもの_"+today()+".csv","﻿"+[head.join(",")].concat(rows).join("\r\n"),"text/csv");
+  });
+
+  // ===== ねらい目 =====
+  $("neraiUpdated").textContent=md(NERAI.updated)+" に調べた内容です";
+  $("evList").innerHTML=NERAI.events.map(e=>'<div class="ev"><span class="ev-date">'+esc(e.date)+'</span><span class="ev-title">'+esc(e.title)+
+    '<span class="tag '+(e.fix?"fix":"guess")+'">'+(e.fix?"決まり":"予想")+'</span></span><p>'+esc(e.note)+'</p></div>').join("");
+  $("tipList").innerHTML=NERAI.tips.map(t=>"<li>"+esc(t)+"</li>").join("");
+  $("warnList").innerHTML=NERAI.warns.map(t=>"<li>"+esc(t)+"</li>").join("");
+  $("srcList").innerHTML="参考："+NERAI.sources.map(([n,u])=>'<a href="'+esc(u)+'" target="_blank" rel="noopener">'+esc(n)+'</a>').join("　");
 
   fill(EX);
+  const t0=lsGet("sedori-tab","calc"); show(TABS.includes(t0)?t0:"calc");
 })();
 </script>
 
