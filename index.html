@@ -253,6 +253,11 @@ ul.tips{margin:0;padding-left:1.2em;display:grid;gap:6px;font-size:14px}
       </ul>
       <p class="foot" id="avoidText"></p>
     </div>
+    <h2>メルカリで調べる一覧（レゴ）</h2>
+    <div class="card" style="gap:12px">
+      <p class="foot" style="color:var(--fg)">2026年末に売られなくなりそうなセットです（海外の情報）。「売り切れを見る」でメルカリの売れたものだけが出ます。売れた値段と、ここ1か月で何件売れたかをメモしてください。メモはこのスマホに残ります。</p>
+      <div id="resList" style="display:grid;gap:14px"></div>
+    </div>
     <h2>これからのセール</h2>
     <div class="list" id="evList"></div>
     <h2>今の時期のコツ</h2>
@@ -288,6 +293,15 @@ ul.tips{margin:0;padding-left:1.2em;display:grid;gap:6px;font-size:14px}
       {name:"冬の家電（加湿器・電気毛布）",star:2,why:"年末年始に強い。寒くなるほど売れる。",care:"大きいものは送料が高い。2月を過ぎると売れ残りやすいので、たくさん買わない。"},
       {name:"スマートウォッチ",star:1,why:"家電のプレゼント人気で1位。",care:"新しい型が出ると古い型が一気に値下がりする。発売日を調べてから。"}
     ],
+    research:[
+      {group:"マインクラフト",items:[["21270","ムーシュルームの家"],["21277","ツルハシの鉱山"]]},
+      {group:"スーパーマリオ・ソニック",items:[["71440","ルイージ（動くフィギュア）のセット"],["72045","マリオカート ヘイホー"],["77001","ソニック キャンプファイヤー"]]},
+      {group:"ディズニー",items:[["43284","ミニ アナとエルサ"],["43285","アリエルのミニお城"]]},
+      {group:"シティ",items:[["60481","ポリストラック"],["60483","工事用ローダー"]]},
+      {group:"ハリー・ポッター",items:[["76467","ルーナ・ラブグッドの家"],["76470","空飛ぶフォード・アングリア"]]},
+      {group:"そのほか",items:[["11040","クラシック 透明ボックス"],["40674","ブリックヘッズ スティッチ"]]},
+      {group:"高いセット（参考。仕入れ値が高いので慣れてから）",items:[["10302","オプティマスプライム"],["21351","ナイトメアー・ビフォア・クリスマス"],["21333","ゴッホ 星月夜"]]}
+    ],
     avoid:"ポケモンカードなどのトレカ・人気ゲーム機（抽選や買い占めで問題になりやすい、偽物の心配）、ダウンジャケット（仕入れ値が高く、偽物を疑われやすい）",
     tips:[
       "11月のセールで仕入れて、12月上旬〜中旬（クリスマス前）に売るのがねらい目。おもちゃ・ゲームのソフト・家電・美容家電が動きやすい。",
@@ -306,7 +320,9 @@ ul.tips{margin:0;padding-left:1.2em;display:grid;gap:6px;font-size:14px}
       ["楽天スーパーセールの予想（DMS）","https://www.dm-s.co.jp/collect/rakuten-sale/"],
       ["おもちゃのプレゼント人気（ベストプレゼント）","https://bestpresent.jp/christmas/toys/"],
       ["家電のプレゼント人気（ベストプレゼント）","https://bestpresent.jp/christmas/digitalappliances/"],
-      ["冬に売れるジャンル（ソレウル）","https://soreuru.jp/sedori-ranking/"]
+      ["冬に売れるジャンル（ソレウル）","https://soreuru.jp/sedori-ranking/"],
+      ["2026年に廃盤になるレゴ（Brick Fanatics）","https://www.brickfanatics.com/every-lego-set-retiring-in-2026-november-update"],
+      ["2026年に廃盤になるレゴ（Stonewars）","https://stonewars.com/retiring-2026/"]
     ]
   };
 
@@ -486,6 +502,12 @@ ul.tips{margin:0;padding-left:1.2em;display:grid;gap:6px;font-size:14px}
   $("evList").innerHTML=NERAI.events.map(e=>'<div class="ev"><span class="ev-date">'+esc(e.date)+'</span><span class="ev-title">'+esc(e.title)+
     '<span class="tag '+(e.fix?"fix":"guess")+'">'+(e.fix?"決まり":"予想")+'</span></span><p>'+esc(e.note)+'</p></div>').join("");
   $("pickList").innerHTML=NERAI.picks.map(p=>'<div class="ev"><span class="ev-title">'+esc(p.name)+'<span class="tag fix" aria-label="おすすめ度 '+p.star+'">'+"★".repeat(p.star)+"☆".repeat(3-p.star)+'</span></span><p>'+esc(p.why)+'</p><p class="item-meta">注意：'+esc(p.care)+'</p></div>').join("");
+  const memos=lsGet("sedori-memo",{});
+  $("resList").innerHTML=NERAI.research.map(g=>'<div style="display:grid;gap:8px"><b style="font-size:14px">'+esc(g.group)+'</b>'+g.items.map(([n,nm])=>
+    '<div class="res"><div class="item-top"><span><span class="num" style="color:var(--accent);font-weight:600">'+n+'</span>　'+esc(nm)+'</span>'+
+    '<a class="btn small" style="text-decoration:none;white-space:nowrap" target="_blank" rel="noopener" href="https://jp.mercari.com/search?keyword='+encodeURIComponent("レゴ "+n)+'&status=sold_out">売り切れを見る</a></div>'+
+    '<input id="memo-'+n+'" data-memo="'+n+'" type="text" placeholder="メモ：例 8,500円で売れている・月5件" value="'+esc(memos[n]||"")+'" style="font-size:15px;padding:8px 10px;margin-top:6px"></div>').join("")+'</div>').join("");
+  $("resList").addEventListener("input",e=>{const k=e.target.dataset.memo;if(!k)return;memos[k]=e.target.value;lsSet("sedori-memo",memos);});
   $("avoidText").textContent="さけたいもの："+NERAI.avoid;
   $("tipList").innerHTML=NERAI.tips.map(t=>"<li>"+esc(t)+"</li>").join("");
   $("warnList").innerHTML=NERAI.warns.map(t=>"<li>"+esc(t)+"</li>").join("");
