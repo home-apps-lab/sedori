@@ -28,6 +28,8 @@
   --accent:#5cc49c; --accent-soft:#1f3a30;
   --ok:#6fd39d; --ok-bg:#183a29; --mid:#e8b955; --mid-bg:#3a2f14; --ng:#f08a7e; --ng-bg:#3d1f1b; color-scheme:dark}
 *{box-sizing:border-box}
+[hidden]{display:none!important}
+.locked .tabs,.locked .view{display:none!important}
 body{background:var(--bg);color:var(--fg);font-family:var(--f-body);font-size:16px;line-height:1.6;
   padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:16px 40px}
 .wrap{max-width:520px;margin:0 auto;display:grid;gap:16px}
@@ -48,8 +50,24 @@ textarea{font:inherit;font-size:15px;width:100%;padding:10px 12px;border:1px sol
 .jump a{font-size:13px;color:var(--accent);border:1px solid var(--line);background:var(--card);border-radius:999px;padding:4px 12px;text-decoration:none}
 .lego h3{font-size:15px;margin:0}
 .lego p{margin:0;font-size:14px}
-.tabs{display:grid;grid-template-columns:repeat(4,1fr);border:1px solid var(--line);border-radius:12px;overflow:hidden;background:var(--card)}
-.tabs button{font:inherit;font-size:15px;border:0;background:transparent;color:var(--fg);padding:11px 4px;cursor:pointer}
+.cand{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px;display:grid;gap:8px}
+.cand-shop{font-size:14px;display:flex;gap:6px;flex-wrap:wrap;align-items:baseline}
+.cand-shop b{font-family:var(--f-num);font-size:17px}
+.down{font-size:12px;color:var(--ok);background:var(--ok-bg);border-radius:999px;padding:1px 8px;font-weight:700}
+.up{font-size:12px;color:var(--ng);background:var(--ng-bg);border-radius:999px;padding:1px 8px}
+.cand-res{border-radius:10px;padding:8px 10px;font-size:14px;display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;align-items:baseline}
+.cand-res.ok{background:var(--ok-bg);color:var(--ok)} .cand-res.mid{background:var(--mid-bg);color:var(--mid)} .cand-res.ng{background:var(--ng-bg);color:var(--ng)}
+.cand-res.none{background:var(--bg);color:var(--muted)}
+.cand-res b{font-family:var(--f-num);font-size:16px}
+.cand-in{display:grid;grid-template-columns:auto 1fr;gap:8px;align-items:center;font-size:13px;font-weight:500}
+.cand-in input{font-size:16px;padding:8px 36px 8px 10px}
+.chips{display:flex;gap:6px;flex-wrap:wrap}
+.chips button{font:inherit;font-size:13px;border:1px solid var(--line);background:var(--card);color:var(--fg);border-radius:999px;padding:4px 12px;cursor:pointer}
+.chips button[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:var(--card);font-weight:700}
+.lead{background:var(--accent-soft);border-radius:12px;padding:12px 14px;font-size:14px}
+a.btn{text-decoration:none;display:inline-block}
+.tabs{display:grid;grid-template-columns:repeat(5,1fr);border:1px solid var(--line);border-radius:12px;overflow:hidden;background:var(--card)}
+.tabs button{font:inherit;font-size:14px;border:0;background:transparent;color:var(--fg);padding:11px 4px;cursor:pointer}
 .tabs button[aria-selected="true"]{background:var(--accent);color:var(--card);font-weight:700}
 
 /* 判定（値札） */
@@ -137,16 +155,45 @@ ul.tips{margin:0;padding-left:1.2em;display:grid;gap:6px;font-size:14px}
     <h1>せどり計算帳</h1>
     <button class="btn small" type="button" id="shareApp">このアプリを人に教える</button>
   </header>
+  <div class="sub" id="syncState" hidden></div>
+
+  <section class="card" id="gate" hidden>
+    <h2 id="gateTitle">合言葉を入れてください</h2>
+    <p class="foot" style="color:var(--fg)" id="gateText">記録はみんなで同じものを見ています。教えてもらった合言葉を入れてください。</p>
+    <label for="gatePass">合言葉
+      <input id="gatePass" type="text" autocomplete="off" autocapitalize="off">
+    </label>
+    <button class="btn main" type="button" id="gateGo">はじめる</button>
+    <p class="foot" id="gateErr" style="color:var(--ng)"></p>
+  </section>
 
   <nav class="tabs" role="tablist" aria-label="画面">
-    <button type="button" role="tab" id="tab-calc" aria-selected="true">計算</button>
+    <button type="button" role="tab" id="tab-cand" aria-selected="true">候補</button>
+    <button type="button" role="tab" id="tab-calc" aria-selected="false">計算</button>
     <button type="button" role="tab" id="tab-log" aria-selected="false">記録</button>
     <button type="button" role="tab" id="tab-listing" aria-selected="false">出品文</button>
     <button type="button" role="tab" id="tab-nerai" aria-selected="false">ねらい目</button>
   </nav>
 
+  <!-- 候補（Claude が調べた品物） -->
+  <section class="view" id="view-cand">
+    <div class="updated" id="candUpdated"></div>
+    <div class="lead" id="candNote"></div>
+    <div class="chips" id="candCats" role="group" aria-label="しぼりこみ"></div>
+    <label for="candSort">並べ方
+      <select id="candSort">
+        <option value="star">おすすめ順</option>
+        <option value="profit">もうけが大きい順（売れた値段を入れたもの）</option>
+        <option value="down">値下がりした順</option>
+        <option value="cheap">安い順</option>
+      </select>
+    </label>
+    <div class="list" id="candList"></div>
+    <p class="foot">・安い店の値段は価格.com で調べたもので、ポイントは入っていません。<br>・「メルカリで売れた値段」は、「売り切れを見る」で見た値段を入れてください。入れるとすぐ、もうけと判定が出ます（みんなで同じものを見ます）。<br>・もうけは、手数料・送料・梱包材を引いた金額です（基準は「計算」の画面の設定）。</p>
+  </section>
+
   <!-- 計算 -->
-  <section class="view" id="view-calc">
+  <section class="view" id="view-calc" hidden>
     <section id="verdict" class="verdict ok" aria-live="polite">
       <div class="v-top">
         <span class="v-label" id="vLabel">仕入れOK</span>
@@ -321,7 +368,7 @@ ul.tips{margin:0;padding-left:1.2em;display:grid;gap:6px;font-size:14px}
   <section class="view" id="view-nerai" hidden>
     <div class="updated" id="neraiUpdated"></div>
     <nav class="jump" aria-label="この画面の中">
-      <a href="#j-pick">おすすめ</a><a href="#j-lego">レゴのまとめ</a><a href="#j-res">調べる一覧</a><a href="#j-sale">セール</a><a href="#j-tips">コツ</a>
+      <a href="#j-pick">おすすめ</a><a href="#j-notes">まとめ</a><a href="#j-sale">セール</a><a href="#j-tips">コツ</a>
     </nav>
     <h2 id="j-pick">今の時期のおすすめ</h2>
     <div class="list" id="pickList"></div>
@@ -334,51 +381,8 @@ ul.tips{margin:0;padding-left:1.2em;display:grid;gap:6px;font-size:14px}
       </ul>
       <p class="foot" id="avoidText"></p>
     </div>
-    <h2 id="j-lego">レゴのまとめ（11/4 に調べた内容）</h2>
-    <div class="card lego">
-      <h3>おすすめのやり方：セールで買って、クリスマス前に売る</h3>
-      <ul class="tips">
-        <li>レゴ公式ストアの去年（2025年）のブラックフライデーは、最大50%オフ・多くの商品が30%オフ（11/28から）</li>
-        <li>楽天のレゴストアは、一昨年（2024年）にポイント5〜10倍、一部は最大41%オフ</li>
-        <li>買ったら、12月上旬〜20日ごろにメルカリで売る</li>
-      </ul>
-      <h3>もうかるかの例（定価1万円のセット）</h3>
-      <ul class="tips">
-        <li>30%オフの7,000円で買い、9,000円で売る → 手数料900円・送料750円・梱包50円を引くと、もうけ300円（ぎりぎり）</li>
-        <li>楽天のポイントが10%（700円）つけば → もうけ1,000円</li>
-        <li>30%オフだけでは足りない。ポイントを重ねるのが大事。1つずつ「計算」の画面で確かめる</li>
-      </ul>
-      <h3>廃盤まで持っておくやり方は、少しだけに</h3>
-      <ul class="tips">
-        <li>「レゴは毎年平均11%値上がりする」という研究がある</li>
-        <li>でも、2021年に廃盤になった96セットのうち67セットは値下がりしていた、という集計もある</li>
-        <li>値上がりまで何年もかかる。箱のつぶれ・日焼けで値段が下がる。やるなら1〜2個を試す程度</li>
-      </ul>
-      <h3>気をつけること</h3>
-      <ul class="tips">
-        <li>海外版を買わない（日本ではあまり売れない）</li>
-        <li>箱をきれいに保つ。送るときは大きめの段ボールで</li>
-        <li>大きいセットは送料が高い（80〜100サイズで850〜1,050円）</li>
-        <li>再販されることがある。再販されると値上がりは止まる</li>
-      </ul>
-      <h3>動き方の例</h3>
-      <ul class="tips">
-        <li>11月中旬まで：下の一覧で「売り切れを見る」を押し、よく売れているものを2〜3個にしぼる</li>
-        <li>11/20〜12/1ごろ：ブラックフライデーで、「計算」が「仕入れOK」のものだけ買う</li>
-        <li>12月上旬〜20日ごろ：「出品文」の画面で文章を作って、メルカリで売る</li>
-      </ul>
-      <h3>安いお店の例（11/3 の価格.com）</h3>
-      <ul class="tips">
-        <li>21270 ムーシュルームの家：楽天ブックス 6,681円（一番安い）、ネットベイビー 6,850円、Amazon 6,855円</li>
-        <li>価格.com の値段にはポイントが入っていない。1,000円台など安すぎるものは、中古や送料別のことがある</li>
-      </ul>
-    </div>
-
-    <h2 id="j-res">メルカリで調べる一覧（レゴ）</h2>
-    <div class="card" style="gap:12px">
-      <p class="foot" style="color:var(--fg)">2026年末に売られなくなりそうなセットです（海外の情報）。「売り切れを見る」でメルカリの売れたものだけが出ます。売れた値段と、ここ1か月で何件売れたかをメモしてください。「安い店を見る」で、今いちばん安いお店が出ます（ポイントは入っていない値段です）。メモはこのスマホに残ります。</p>
-      <div id="resList" style="display:grid;gap:14px"></div>
-    </div>
+    <h2 id="j-notes">調べたことのまとめ</h2>
+    <div class="card lego" id="noteList"></div>
     <h2 id="j-sale">これからのセール</h2>
     <div class="list" id="evList"></div>
     <h2 id="j-tips">今の時期のコツ</h2>
@@ -386,7 +390,7 @@ ul.tips{margin:0;padding-left:1.2em;display:grid;gap:6px;font-size:14px}
     <h2>気をつけること</h2>
     <div class="card"><ul class="tips" id="warnList"></ul></div>
     <div class="src" id="srcList"></div>
-    <p class="foot">「予想」は過去の傾向からの見込みです。決まった日程はお店の公式ページで確かめてください。毎週 Claude が調べ直して入れかえます。</p>
+    <p class="foot">「予想」は過去の傾向からの見込みです。決まった日程はお店の公式ページで確かめてください。毎週月曜の朝（ブラックフライデーの間は毎朝）、Claude が調べ直して入れかえます。</p>
   </section>
 </div>
 
@@ -394,58 +398,8 @@ ul.tips{margin:0;padding-left:1.2em;display:grid;gap:6px;font-size:14px}
 
 <script>
 (function(){
-  // ===== ねらい目（Claude が毎週ここを書きかえる） =====
-  const NERAI={
-    updated:"2026-11-04",
-    events:[
-      {date:"11/4（水）20:00 〜 11/11（水）1:59",title:"楽天 お買い物マラソン",fix:true,
-       note:"買ったお店の数が多いほどポイントが上がる（細かい決まりは楽天のエントリーページで確かめる）。11/5・11/10（5と0のつく日）はさらに上乗せ。"},
-      {date:"11/20（金）ごろ 〜 11/27（金）ごろ",title:"楽天 ブラックフライデー",fix:false,
-       note:"毎年この時期。マラソンと同じく、お店をまたいで買うとポイントが上がる形の見込み。"},
-      {date:"11月下旬 〜 12月はじめ",title:"Amazon ブラックフライデー",fix:false,
-       note:"日程はまだ発表されていない。11/20〜25ごろに先行セール、11月末から本セールという予想が多い。"},
-      {date:"12/4（金）ごろ 〜",title:"楽天スーパーセール",fix:false,
-       note:"年に4回の大きなセール。半額品が多い。"}
-    ],
-    picks:[
-      {name:"レゴ（定番のセット）",star:3,why:"クリスマスのおもちゃ人気で1位。型番で同じ商品を探せるので、売れた値段が調べやすい。もうすぐ売られなくなる（廃盤）セットは値上がりしやすい。",care:"箱がつぶれると値段が下がる。送るときは大きめの箱で。"},
-      {name:"知育玩具・プログラミングのおもちゃ",star:3,why:"クリスマスのおもちゃ人気で上位。親が「新品で」ほしがるので、新品せどりに向いている。",care:"12月20日ごろを過ぎると急に売れにくくなる。それまでに売り切る。"},
-      {name:"美容家電・マッサージ器（顔のスチーマー、目元・首のマッサージ器など）",star:2,why:"家電のプレゼント人気で2〜4位。小さくて送料が安い。セールで値段が大きく下がりやすい。",care:"同じ商品を出す人が多いと値下げ競争になる。メルカリで出品数を見てから。"},
-      {name:"冬の家電（加湿器・電気毛布）",star:2,why:"年末年始に強い。寒くなるほど売れる。",care:"大きいものは送料が高い。2月を過ぎると売れ残りやすいので、たくさん買わない。"},
-      {name:"スマートウォッチ",star:1,why:"家電のプレゼント人気で1位。",care:"新しい型が出ると古い型が一気に値下がりする。発売日を調べてから。"}
-    ],
-    research:[
-      {group:"マインクラフト",items:[["21270","ムーシュルームの家"],["21277","ツルハシの鉱山"]]},
-      {group:"スーパーマリオ・ソニック",items:[["71440","ルイージ（動くフィギュア）のセット"],["72045","マリオカート ヘイホー"],["77001","ソニック キャンプファイヤー"]]},
-      {group:"ディズニー",items:[["43284","ミニ アナとエルサ"],["43285","アリエルのミニお城"]]},
-      {group:"シティ",items:[["60481","ポリストラック"],["60483","工事用ローダー"]]},
-      {group:"ハリー・ポッター",items:[["76467","ルーナ・ラブグッドの家"],["76470","空飛ぶフォード・アングリア"]]},
-      {group:"そのほか",items:[["11040","クラシック 透明ボックス"],["40674","ブリックヘッズ スティッチ"]]},
-      {group:"高いセット（参考。仕入れ値が高いので慣れてから）",items:[["10302","オプティマスプライム"],["21351","ナイトメアー・ビフォア・クリスマス"],["21333","ゴッホ 星月夜"]]}
-    ],
-    avoid:"ポケモンカードなどのトレカ・人気ゲーム機（抽選や買い占めで問題になりやすい、偽物の心配）、ダウンジャケット（仕入れ値が高く、偽物を疑われやすい）",
-    tips:[
-      "11月のセールで仕入れて、12月上旬〜中旬（クリスマス前）に売るのがねらい目。おもちゃ・ゲームのソフト・家電・美容家電が動きやすい。",
-      "セール中は同じ商品をメルカリに出す人も増えて、値段が下がりやすい。セールで買ったものを、すぐ同じセール中に売ろうとしない。",
-      "仕入れる前に、メルカリで商品名を調べて「売り切れ」だけを表示。最近の売れた値段と、売れている数を見る。",
-      "楽天のポイントは「期間限定ポイント」が多い。次の仕入れに使う予定を立てておく。"
-    ],
-    warns:[
-      "「お一人様1点まで」の品を何度も買わない。お店の決まりに反し、アカウントが止められることがある。",
-      "人気ゲーム機・限定品の買い占めはしない。",
-      "年末年始は配送が遅れやすい。12月後半に売れたものは早めに送る。"
-    ],
-    sources:[
-      ["楽天お買い物マラソンの日程（アプリオ）","https://appllio.com/when-rakuten-shopping-marathon"],
-      ["ブラックフライデー2026の予想（Goal）","https://www.goal.com/jp/%E3%83%8B%E3%83%A5%E3%83%BC%E3%82%B9/when-start-black-fryday-2026/bltf2ddc98b3d59a975"],
-      ["楽天スーパーセールの予想（DMS）","https://www.dm-s.co.jp/collect/rakuten-sale/"],
-      ["おもちゃのプレゼント人気（ベストプレゼント）","https://bestpresent.jp/christmas/toys/"],
-      ["家電のプレゼント人気（ベストプレゼント）","https://bestpresent.jp/christmas/digitalappliances/"],
-      ["冬に売れるジャンル（ソレウル）","https://soreuru.jp/sedori-ranking/"],
-      ["2026年に廃盤になるレゴ（Brick Fanatics）","https://www.brickfanatics.com/every-lego-set-retiring-in-2026-november-update"],
-      ["2026年に廃盤になるレゴ（Stonewars）","https://stonewars.com/retiring-2026/"]
-    ]
-  };
+  // ===== 調べた結果（調べた結果.json を、公開するときにここへ埋めこむ。みんなの記録版は読み込みで上書き） =====
+  let R={"updated":"2026-11-04","note":"11/20ごろから楽天・Amazon のブラックフライデー。今は値段の下見の時期です。候補の「メルカリで売れた値段」を入れて、もうけが出そうなものをしぼっておきましょう。","candidates":[{"id":"lego-21270","cat":"レゴ","name":"レゴ マインクラフト ムーシュルームの家","num":"21270","star":3,"shop":"楽天ブックス","price":6681,"priceDate":"11/3","prev":null,"kakaku":"https://kakaku.com/item/S0001015075/","kw":"レゴ 21270","ship":3,"why":"2026年末に廃盤予定（海外の情報）。マインクラフトは子どもに人気。","warn":""},{"id":"lego-21277","cat":"レゴ","name":"レゴ マインクラフト ツルハシの鉱山","num":"21277","star":3,"shop":"Amazon","price":7500,"priceDate":"11/3","prev":null,"kakaku":"https://kakaku.com/item/S0001030384/","kw":"レゴ 21277","ship":3,"why":"2026年末に廃盤予定（海外の情報）。","warn":""},{"id":"lego-71440","cat":"レゴ","name":"レゴ スーパーマリオ ルイージ（動くフィギュア）のセット","num":"71440","star":3,"shop":"ビックカメラ.com","price":6510,"priceDate":"11/3","prev":null,"kakaku":"https://kakaku.com/item/S0001004126/","kw":"レゴ 71440","ship":3,"why":"2026年末に廃盤予定（海外の情報）。マリオはプレゼントの定番。","warn":"ビックカメラはポイントがつくので、実際はもう少し安い。"},{"id":"lego-72045","cat":"レゴ","name":"レゴ マリオカート ヘイホー","num":"72045","star":2,"shop":"","price":null,"priceDate":"","prev":null,"kakaku":"","kw":"レゴ 72045","ship":2,"why":"2026年末に廃盤予定（海外の情報）。","warn":"価格.com で見つかりませんでした。日本で売られていないかもしれません。"},{"id":"lego-77001","cat":"レゴ","name":"レゴ ソニック キャンプファイヤー","num":"77001","star":2,"shop":"楽天市場のお店","price":2807,"priceDate":"11/3","prev":null,"kakaku":"https://kakaku.com/item/S0001015032/","kw":"レゴ 77001","ship":2,"why":"2026年末に廃盤予定（海外の情報）。","warn":"安いセットは、手数料と送料でもうけが消えやすい。"},{"id":"lego-43284","cat":"レゴ","name":"レゴ ディズニー ミニ アナとエルサ","num":"43284","star":1,"shop":"Amazon","price":1000,"priceDate":"11/3","prev":null,"kakaku":"","kw":"レゴ 43284","ship":2,"why":"2026年末に廃盤予定（海外の情報）。","warn":"1,000円は安すぎます。新品か・送料が別か、お店のページで確かめてください。"},{"id":"lego-43285","cat":"レゴ","name":"レゴ ディズニー アリエルのミニお城","num":"43285","star":2,"shop":"Amazon","price":2155,"priceDate":"11/3","prev":null,"kakaku":"","kw":"レゴ 43285","ship":2,"why":"2026年末に廃盤予定（海外の情報）。","warn":"安いセットは、手数料と送料でもうけが消えやすい。"},{"id":"lego-60481","cat":"レゴ","name":"レゴ シティ ポリストラック","num":"60481","star":1,"shop":"Joshin web","price":1186,"priceDate":"11/3","prev":null,"kakaku":"","kw":"レゴ 60481","ship":2,"why":"2026年末に廃盤予定（海外の情報）。","warn":"安いセットは、手数料と送料でもうけが消えやすい。"},{"id":"lego-60483","cat":"レゴ","name":"レゴ シティ 工事用ローダー","num":"60483","star":1,"shop":"Amazon","price":1191,"priceDate":"11/3","prev":null,"kakaku":"","kw":"レゴ 60483","ship":2,"why":"2026年末に廃盤予定（海外の情報）。","warn":"安いセットは、手数料と送料でもうけが消えやすい。"},{"id":"lego-76467","cat":"レゴ","name":"レゴ ハリー・ポッター ルーナ・ラブグッドの家","num":"76467","star":3,"shop":"楽天ブックス","price":14383,"priceDate":"11/3","prev":null,"kakaku":"https://kakaku.com/item/S0001045460/","kw":"レゴ 76467","ship":4,"why":"2026年末に廃盤予定（海外の情報）。大人のファンも買う。","warn":"箱が大きい。80サイズで考える。"},{"id":"lego-76470","cat":"レゴ","name":"レゴ ハリー・ポッター 空飛ぶフォード・アングリア","num":"76470","star":2,"shop":"Yahoo!ショッピングのお店","price":12560,"priceDate":"11/3","prev":null,"kakaku":"https://kakaku.com/item/S0001045999/","kw":"レゴ 76470","ship":4,"why":"2026年末に廃盤予定（海外の情報）。","warn":"ヤフーは PayPay ポイントがつくので、実際はもう少し安い。"},{"id":"lego-11040","cat":"レゴ","name":"レゴ クラシック 透明ボックス","num":"11040","star":2,"shop":"Amazon","price":2980,"priceDate":"11/3","prev":null,"kakaku":"https://kakaku.com/item/S0001027587/","kw":"レゴ 11040","ship":3,"why":"クラシックで2026年に廃盤になるのはこれだけ（海外の情報）。","warn":""},{"id":"lego-40674","cat":"レゴ","name":"レゴ ブリックヘッズ スティッチ","num":"40674","star":2,"shop":"楽天のレゴストア","price":1980,"priceDate":"11/3","prev":null,"kakaku":"","kw":"レゴ 40674","ship":2,"why":"2026年末に廃盤予定（海外の情報）。スティッチは人気。","warn":"安いセットは、手数料と送料でもうけが消えやすい。"},{"id":"lego-10302","cat":"レゴ","name":"レゴ オプティマスプライム","num":"10302","star":1,"shop":"楽天市場のお店","price":36060,"priceDate":"11/3","prev":null,"kakaku":"https://kakaku.com/item/S0000956719/","kw":"レゴ 10302","ship":5,"why":"2026年末に廃盤予定（海外の情報）。大人向けの大きいセット。","warn":"仕入れ値が高い。慣れてから。"},{"id":"lego-21351","cat":"レゴ","name":"レゴ ナイトメアー・ビフォア・クリスマス","num":"21351","star":1,"shop":"","price":null,"priceDate":"","prev":null,"kakaku":"","kw":"レゴ 21351","ship":5,"why":"2026年末に廃盤予定（海外の情報）。","warn":"価格.com では本体の値段が確かめられませんでした。"},{"id":"lego-21333","cat":"レゴ","name":"レゴ ゴッホ 星月夜","num":"21333","star":1,"shop":"楽天のお店（ベネリック）","price":28980,"priceDate":"11/3","prev":null,"kakaku":"https://kakaku.com/item/S0000961255/","kw":"レゴ 21333","ship":5,"why":"2026年末に廃盤予定（海外の情報）。大人向け。","warn":"仕入れ値が高い。慣れてから。"}],"picks":[{"name":"レゴ（定番のセット）","star":3,"why":"クリスマスのおもちゃ人気で1位。型番で同じ商品を探せるので、売れた値段が調べやすい。","care":"箱がつぶれると値段が下がる。送るときは大きめの箱で。"},{"name":"知育玩具・プログラミングのおもちゃ","star":3,"why":"クリスマスのおもちゃ人気で上位。親が「新品で」ほしがるので、新品せどりに向いている。","care":"12月20日ごろを過ぎると急に売れにくくなる。それまでに売り切る。"},{"name":"美容家電・マッサージ器（顔のスチーマー、目元・首のマッサージ器など）","star":2,"why":"家電のプレゼント人気で2〜4位。小さくて送料が安い。セールで値段が大きく下がりやすい。","care":"同じ商品を出す人が多いと値下げ競争になる。メルカリで出品数を見てから。"},{"name":"冬の家電（加湿器・電気毛布）","star":2,"why":"年末年始に強い。寒くなるほど売れる。","care":"大きいものは送料が高い。2月を過ぎると売れ残りやすいので、たくさん買わない。"},{"name":"スマートウォッチ","star":1,"why":"家電のプレゼント人気で1位。","care":"新しい型が出ると古い型が一気に値下がりする。発売日を調べてから。"}],"avoid":"ポケモンカードなどのトレカ・人気ゲーム機（抽選や買い占めで問題になりやすい、偽物の心配）、ダウンジャケット（仕入れ値が高く、偽物を疑われやすい）","events":[{"date":"11/4（水）20:00 〜 11/11（水）1:59","title":"楽天 お買い物マラソン","fix":true,"note":"買ったお店の数が多いほどポイントが上がる（細かい決まりは楽天のエントリーページで確かめる）。11/5・11/10（5と0のつく日）はさらに上乗せ。"},{"date":"11/20（金）ごろ 〜 11/27（金）ごろ","title":"楽天 ブラックフライデー","fix":false,"note":"毎年この時期。お店をまたいで買うとポイントが上がる形の見込み。"},{"date":"11月下旬 〜 12月はじめ","title":"Amazon ブラックフライデー","fix":false,"note":"日程はまだ発表されていない。11/20〜25ごろに先行セール、11月末から本セールという予想が多い。"},{"date":"11/28（金）ごろ 〜","title":"レゴ公式ストア ブラックフライデー","fix":false,"note":"去年（2025年）は 11/28 から。最大50%オフ、多くの商品が30%オフだった。"},{"date":"12/4（金）ごろ 〜","title":"楽天スーパーセール","fix":false,"note":"年に4回の大きなセール。半額品が多い。"}],"notes":[{"title":"レゴ：おすすめのやり方（セールで買って、クリスマス前に売る）","items":["レゴ公式ストアの去年（2025年）のブラックフライデーは、最大50%オフ・多くの商品が30%オフ（11/28から）","楽天のレゴストアは、一昨年（2024年）にポイント5〜10倍、一部は最大41%オフ","買ったら、12月上旬〜20日ごろにメルカリで売る"]},{"title":"レゴ：もうかるかの例（定価1万円のセット）","items":["30%オフの7,000円で買い、9,000円で売る → 手数料900円・送料750円・梱包50円を引くと、もうけ300円（ぎりぎり）","楽天のポイントが10%（700円）つけば → もうけ1,000円","30%オフだけでは足りない。ポイントを重ねるのが大事"]},{"title":"レゴ：廃盤まで持っておくやり方は、少しだけに","items":["「レゴは毎年平均11%値上がりする」という研究がある","でも、2021年に廃盤になった96セットのうち67セットは値下がりしていた、という集計もある","値上がりまで何年もかかる。箱のつぶれ・日焼けで値段が下がる。やるなら1〜2個を試す程度"]},{"title":"レゴ：気をつけること","items":["海外版を買わない（日本ではあまり売れない）","箱をきれいに保つ。送るときは大きめの段ボールで","大きいセットは送料が高い（80〜100サイズで850〜1,050円）","再販されることがある。再販されると値上がりは止まる","廃盤の情報は海外のファンサイトのもの。レゴ公式サイトに「まもなく販売終了」と出ているかで確かめる"]},{"title":"動き方の例","items":["11月中旬まで：「候補」で「売り切れを見る」を押し、メルカリで売れた値段を入れて、もうけが出るものを2〜3個にしぼる","11/20〜12/1ごろ：ブラックフライデーで、「候補」が「仕入れOK」になったものだけ買う","12月上旬〜20日ごろ：「出品文」の画面で文章を作って、メルカリで売る"]}],"tips":["11月のセールで仕入れて、12月上旬〜中旬（クリスマス前）に売るのがねらい目。おもちゃ・ゲームのソフト・家電・美容家電が動きやすい。","セール中は同じ商品をメルカリに出す人も増えて、値段が下がりやすい。セールで買ったものを、すぐ同じセール中に売ろうとしない。","仕入れる前に、メルカリで商品名を調べて「売り切れ」だけを表示。最近の売れた値段と、売れている数を見る。","価格.com の値段にはポイントが入っていない。楽天・ヤフー・家電量販店はポイントの分、実際はもっと安い。","楽天のポイントは「期間限定ポイント」が多い。次の仕入れに使う予定を立てておく。"],"warns":["「お一人様1点まで」の品を何度も買わない。お店の決まりに反し、アカウントが止められることがある。","人気ゲーム機・限定品の買い占めはしない。","年末年始は配送が遅れやすい。12月後半に売れたものは早めに送る。"],"sources":[["楽天お買い物マラソンの日程（アプリオ）","https://appllio.com/when-rakuten-shopping-marathon"],["ブラックフライデー2026の予想（Goal）","https://www.goal.com/jp/%E3%83%8B%E3%83%A5%E3%83%BC%E3%82%B9/when-start-black-fryday-2026/bltf2ddc98b3d59a975"],["楽天スーパーセールの予想（DMS）","https://www.dm-s.co.jp/collect/rakuten-sale/"],["おもちゃのプレゼント人気（ベストプレゼント）","https://bestpresent.jp/christmas/toys/"],["家電のプレゼント人気（ベストプレゼント）","https://bestpresent.jp/christmas/digitalappliances/"],["2026年に廃盤になるレゴ（Brick Fanatics）","https://www.brickfanatics.com/every-lego-set-retiring-in-2026-november-update"],["2026年に廃盤になるレゴ（Stonewars）","https://stonewars.com/retiring-2026/"],["レゴ ブラックフライデー2025（ゲームペディア）","https://premium.gamepedia.jp/hobby/archives/64094"],["レゴ投資の平均と中央値（個人ブログ）","https://h9nfp.com/lego-recommendation/"]]};
 
   const SHIP=[
     ["ネコポス（A4・厚さ3cmまで）",210],
@@ -465,9 +419,19 @@ ul.tips{margin:0;padding-left:1.2em;display:grid;gap:6px;font-size:14px}
   function lsGet(k,d){try{const v=localStorage.getItem(k);return v?JSON.parse(v):d}catch(e){return d}}
   function lsSet(k,v){try{localStorage.setItem(k,JSON.stringify(v));return true}catch(e){return false}}
 
+  // ===== みんなの記録（Google スクリプトで開いたときだけ） =====
+  const SERVER=typeof google!=="undefined"&&google.script&&google.script.run;
+  const APP_URL="__APP_URL__";
+  let pass=lsGet("sedori-pass","");
+  const memoT={};
+  function call(action,data){return new Promise((res,rej)=>{google.script.run.withSuccessHandler(res).withFailureHandler(rej).api(pass,action,data||{});});}
+  function setState(t){const e=$("syncState");if(e)e.textContent=t;}
+  function failSave(err){setState("保存できませんでした");toast(err&&/合言葉/.test(err.message)?"合言葉を入れ直してください":"保存できませんでした。電波のよいところで開き直してください");}
+  function sync(ch){setState("保存中…");call("save",{put:ch.put||[],del:ch.del||[]}).then(()=>setState("保存しました（みんなの記録）")).catch(failSave);}
+
   // ===== タブ =====
-  const TABS=["calc","log","listing","nerai"];
-  function show(t){TABS.forEach(x=>{$("tab-"+x).setAttribute("aria-selected",x===t);$("view-"+x).hidden=x!==t;});lsSet("sedori-tab",t);if(t==="log")renderLog();if(t==="listing")fillFrom();}
+  const TABS=["cand","calc","log","listing","nerai"];
+  function show(t){TABS.forEach(x=>{$("tab-"+x).setAttribute("aria-selected",x===t);$("view-"+x).hidden=x!==t;});lsSet("sedori-tab2",t);if(t==="log")renderLog();if(t==="listing")fillFrom();}
   TABS.forEach(x=>$("tab-"+x).addEventListener("click",()=>show(x)));
 
   // ===== 計算 =====
@@ -530,7 +494,11 @@ ul.tips{margin:0;padding-left:1.2em;display:grid;gap:6px;font-size:14px}
 
   // ===== 記録 =====
   let items=lsGet("sedori-items",[]);
-  function saveItems(){if(!lsSet("sedori-items",items))toast("保存できませんでした。ホーム画面のアイコンから開いてください");}
+  function saveItems(ch){
+    const ok=lsSet("sedori-items",items);
+    if(SERVER){if(ch)sync(ch);}
+    else if(!ok)toast("保存できませんでした。ホーム画面のアイコンから開いてください");
+  }
   const profitOf=it=>it.sell-Math.floor(it.sell*it.r)-it.ship-it.pack-(it.buy-it.pt);
 
   $("toLog").addEventListener("click",()=>{
@@ -539,7 +507,7 @@ ul.tips{margin:0;padding-left:1.2em;display:grid;gap:6px;font-size:14px}
     if(!c.buy){toast("買う値段を入れてください");$("buy").focus();return;}
     items.push({id:Date.now()+"",name:$("name").value.trim()||"（名前なし）",buyDate:today(),buy:c.buy,pt:c.ptYen,
       expSell:c.sell,ship:c.ship,pack:c.pack,r:c.r,status:"stock",sell:0,sellDate:""});
-    saveItems();toast("記録に入れました");
+    saveItems({put:[items[items.length-1]]});toast("記録に入れました");
   });
 
   let openSell=null, armDel=null;
@@ -587,12 +555,12 @@ ul.tips{margin:0;padding-left:1.2em;display:grid;gap:6px;font-size:14px}
     else if(act==="sold"&&it){
       const sp=parseFloat($("sp-"+id).value), ss=parseFloat($("ss-"+id).value)||0, sd=$("sd-"+id).value||today();
       if(!(sp>0)){toast("売れた値段を入れてください");return;}
-      Object.assign(it,{status:"sold",sell:sp,ship:ss,sellDate:sd});openSell=null;saveItems();toast("もうけ "+yen(profitOf(it)));
+      Object.assign(it,{status:"sold",sell:sp,ship:ss,sellDate:sd});openSell=null;saveItems({put:[it]});toast("もうけ "+yen(profitOf(it)));
     }
-    else if(act==="unsell"&&it){Object.assign(it,{status:"stock",sell:0,sellDate:""});saveItems();}
+    else if(act==="unsell"&&it){Object.assign(it,{status:"stock",sell:0,sellDate:""});saveItems({put:[it]});}
     else if(act==="del"&&it){
       if(armDel!==id){armDel=id;clearTimeout(renderLog.t);renderLog.t=setTimeout(()=>{armDel=null;renderLog();},5000);}
-      else{lastDeleted={item:it,index:items.indexOf(it)};items=items.filter(i=>i.id!==id);armDel=null;openSell=null;saveItems();toast("「"+it.name+"」を消しました");$("undoDel").hidden=false;}
+      else{lastDeleted={item:it,index:items.indexOf(it)};items=items.filter(i=>i.id!==id);armDel=null;openSell=null;saveItems({del:[id]});toast("「"+it.name+"」を消しました");$("undoDel").hidden=false;}
     }
     renderLog();
   });
@@ -616,7 +584,7 @@ ul.tips{margin:0;padding-left:1.2em;display:grid;gap:6px;font-size:14px}
   $("undoDel").addEventListener("click",()=>{
     if(!lastDeleted)return;
     items.splice(Math.min(lastDeleted.index,items.length),0,lastDeleted.item);
-    toast("「"+lastDeleted.item.name+"」を元に戻しました");lastDeleted=null;$("undoDel").hidden=true;saveItems();renderLog();
+    toast("「"+lastDeleted.item.name+"」を元に戻しました");saveItems({put:[lastDeleted.item]});lastDeleted=null;$("undoDel").hidden=true;renderLog();
   });
   $("mergeBtn").addEventListener("click",()=>$("mergeFile").click());
   $("mergeFile").addEventListener("change",e=>{
@@ -624,7 +592,7 @@ ul.tips{margin:0;padding-left:1.2em;display:grid;gap:6px;font-size:14px}
     const rd=new FileReader();
     rd.onload=()=>{try{const d=JSON.parse(rd.result);if(!Array.isArray(d.items))throw 0;
       const have=new Set(items.map(i=>i.id));const add=d.items.filter(i=>i&&i.id&&!have.has(i.id));
-      items=items.concat(add);saveItems();renderLog();toast(add.length+"件 足しました");}
+      items=items.concat(add);saveItems({put:add});renderLog();toast(add.length+"件 足しました");}
       catch(err){toast("このファイルは読めませんでした。「記録をファイルに保存」で作ったファイルを選んでください");}
       e.target.value="";};
     rd.readAsText(f);
@@ -691,10 +659,10 @@ ul.tips{margin:0;padding-left:1.2em;display:grid;gap:6px;font-size:14px}
 
   // ===== 人に教える =====
   $("shareApp").addEventListener("click",()=>{
-    const url="https://home-apps-lab.github.io/sedori/";
-    if(navigator.share){navigator.share({title:"せどり計算帳",text:"新品せどりのもうけ計算アプリ",url}).catch(()=>{});}
-    else if(navigator.clipboard){navigator.clipboard.writeText(url).then(()=>toast("アドレスをコピーしました。LINE などに貼って送ってください")).catch(()=>toast(url));}
-    else toast(url);
+    const url=APP_URL.startsWith("__")?"https://home-apps-lab.github.io/sedori/":APP_URL;
+    const copy=()=>{if(navigator.clipboard){navigator.clipboard.writeText(url).then(()=>toast("アドレスをコピーしました。LINE などに貼って送ってください（合言葉も伝えてください）")).catch(()=>toast(url));}else toast(url);};
+    if(navigator.share){navigator.share({title:"せどり計算帳",text:"新品せどりのもうけ計算アプリ",url}).catch(e=>{if(!e||e.name!=="AbortError")copy();});}
+    else copy();
   });
 
   $("csv").addEventListener("click",()=>{
@@ -703,25 +671,126 @@ ul.tips{margin:0;padding-left:1.2em;display:grid;gap:6px;font-size:14px}
     download("せどり計算帳_売れたもの_"+today()+".csv","﻿"+[head.join(",")].concat(rows).join("\r\n"),"text/csv");
   });
 
-  // ===== ねらい目 =====
-  $("neraiUpdated").textContent=md(NERAI.updated)+" に調べた内容です";
-  $("evList").innerHTML=NERAI.events.map(e=>'<div class="ev"><span class="ev-date">'+esc(e.date)+'</span><span class="ev-title">'+esc(e.title)+
-    '<span class="tag '+(e.fix?"fix":"guess")+'">'+(e.fix?"決まり":"予想")+'</span></span><p>'+esc(e.note)+'</p></div>').join("");
-  $("pickList").innerHTML=NERAI.picks.map(p=>'<div class="ev"><span class="ev-title">'+esc(p.name)+'<span class="tag fix" aria-label="おすすめ度 '+p.star+'">'+"★".repeat(p.star)+"☆".repeat(3-p.star)+'</span></span><p>'+esc(p.why)+'</p><p class="item-meta">注意：'+esc(p.care)+'</p></div>').join("");
-  const memos=lsGet("sedori-memo",{});
-  $("resList").innerHTML=NERAI.research.map(g=>'<div style="display:grid;gap:8px"><b style="font-size:14px">'+esc(g.group)+'</b>'+g.items.map(([n,nm])=>
-    '<div class="res"><div class="item-top"><span><span class="num" style="color:var(--accent);font-weight:600">'+n+'</span>　'+esc(nm)+'</span>'+
-    '<a class="btn small" style="text-decoration:none;white-space:nowrap" target="_blank" rel="noopener" href="https://jp.mercari.com/search?keyword='+encodeURIComponent("レゴ "+n)+'&status=sold_out">売り切れを見る</a></div>'+
-    '<div class="btns" style="margin-top:6px"><a class="btn small" style="text-decoration:none" target="_blank" rel="noopener" href="https://search.kakaku.com/'+encodeURIComponent("レゴ "+n)+'/">安い店を見る（価格.com）</a></div>'+
-    '<input id="memo-'+n+'" data-memo="'+n+'" type="text" placeholder="メモ：例 8,500円で売れている・月5件" value="'+esc(memos[n]||"")+'" style="font-size:15px;padding:8px 10px;margin-top:6px"></div>').join("")+'</div>').join("");
-  $("resList").addEventListener("input",e=>{const k=e.target.dataset.memo;if(!k)return;memos[k]=e.target.value;lsSet("sedori-memo",memos);});
-  $("avoidText").textContent="さけたいもの："+NERAI.avoid;
-  $("tipList").innerHTML=NERAI.tips.map(t=>"<li>"+esc(t)+"</li>").join("");
-  $("warnList").innerHTML=NERAI.warns.map(t=>"<li>"+esc(t)+"</li>").join("");
-  $("srcList").innerHTML="参考："+NERAI.sources.map(([n,u])=>'<a href="'+esc(u)+'" target="_blank" rel="noopener">'+esc(n)+'</a>').join("　");
+  // ===== 候補・ねらい目（R を表示する） =====
+  let memos=lsGet("sedori-memo",{});
+  let candCat="すべて";
+  const stars=n=>"★".repeat(n||0)+"☆".repeat(3-(n||0));
+  function candEval(c){
+    const sell=parseFloat(String(memos["p:"+c.id]||"").replace(/[^\d.]/g,""));
+    if(!(sell>0)||!c.price)return null;
+    const r=v("fee")/100, ship=(SHIP[c.ship]||SHIP[3])[1]||0, pack=v("pack"), gY=v("goalYen"), gP=v("goalPct")/100;
+    const profit=sell-Math.floor(sell*r)-ship-pack-c.price, rate=profit/sell;
+    return {sell,profit,rate,cls:profit>=gY&&rate>=gP?"ok":profit>0?"mid":"ng",label:profit>=gY&&rate>=gP?"仕入れOK":profit>0?"ぎりぎり":"見送り"};
+  }
+  function candResHtml(c){
+    const e=candEval(c);
+    if(!c.price)return '<div class="cand-res none">安い店の値段がまだありません</div>';
+    if(!e)return '<div class="cand-res none">メルカリで売れた値段を入れると、もうけが出ます</div>';
+    return '<div class="cand-res '+e.cls+'"><span>'+e.label+'</span><b>'+(e.profit>=0?"+":"")+yen(e.profit)+'（'+Math.round(e.rate*100)+'%）</b></div>';
+  }
+  function renderCands(){
+    if(!R){$("candList").innerHTML='<div class="empty">まだ調べた結果がありません。</div>';return;}
+    const cats=["すべて"].concat([...new Set(R.candidates.map(c=>c.cat))]);
+    if(!cats.includes(candCat))candCat="すべて";
+    $("candCats").innerHTML=cats.length>2?cats.map(c=>'<button type="button" data-cat="'+esc(c)+'" aria-pressed="'+(c===candCat)+'">'+esc(c)+'</button>').join(""):"";
+    let list=R.candidates.filter(c=>candCat==="すべて"||c.cat===candCat);
+    const sort=$("candSort").value;
+    const pv=c=>{const e=candEval(c);return e?e.profit:-1e9;};
+    const dv=c=>c.prev&&c.price?c.prev-c.price:0;
+    list=list.slice().sort(sort==="profit"?(a,b)=>pv(b)-pv(a):sort==="down"?(a,b)=>dv(b)-dv(a):sort==="cheap"?(a,b)=>(a.price||1e9)-(b.price||1e9):(a,b)=>(b.star||0)-(a.star||0));
+    const focused=document.activeElement&&document.activeElement.dataset?document.activeElement.dataset.cand:null;
+    if(focused)return; // 入力中は並べかえない
+    $("candList").innerHTML=list.map(c=>{
+      const d=dv(c);
+      const ch=d>0?'<span class="down">▼ '+yen(d)+' 下がった</span>':d<0?'<span class="up">▲ '+yen(-d)+' 上がった</span>':"";
+      return '<div class="cand" data-id="'+esc(c.id)+'">'+
+        '<div class="item-top"><span class="item-name">'+esc(c.name)+'</span><span class="tag fix" aria-label="おすすめ度 '+c.star+'">'+stars(c.star)+'</span></div>'+
+        '<div class="cand-shop">'+(c.price?'安い店：'+esc(c.shop)+' <b>'+yen(c.price)+'</b><span class="item-meta">（'+esc(c.priceDate)+'）</span>'+ch:'<span class="item-meta">安い店：まだ分かりません</span>')+'</div>'+
+        '<label class="cand-in" for="cp-'+esc(c.id)+'">メルカリで売れた値段<span class="yen"><input id="cp-'+esc(c.id)+'" data-cand="'+esc(c.id)+'" type="number" inputmode="numeric" placeholder="例 9000" value="'+esc(memos["p:"+c.id]||"")+'"></span></label>'+
+        '<div data-res="'+esc(c.id)+'">'+candResHtml(c)+'</div>'+
+        (c.why?'<p class="item-meta" style="margin:0">'+esc(c.why)+'</p>':"")+
+        (c.warn?'<p class="item-meta" style="margin:0;color:var(--mid)">注意：'+esc(c.warn)+'</p>':"")+
+        '<div class="btns">'+
+          '<a class="btn small" target="_blank" rel="noopener" href="https://jp.mercari.com/search?keyword='+encodeURIComponent(c.kw||c.name)+'&status=sold_out">売り切れを見る</a>'+
+          '<a class="btn small" target="_blank" rel="noopener" href="'+esc(c.kakaku||("https://search.kakaku.com/"+encodeURIComponent(c.kw||c.name)+"/"))+'">安い店を見る</a>'+
+          '<button class="btn small" type="button" data-calc="'+esc(c.id)+'">計算で細かく</button>'+
+        '</div></div>';
+    }).join("")||'<div class="empty">この種類の候補はありません。</div>';
+  }
+  $("candSort").addEventListener("change",renderCands);
+  $("candCats").addEventListener("click",e=>{const b=e.target.closest("button[data-cat]");if(!b)return;candCat=b.dataset.cat;renderCands();});
+  $("candList").addEventListener("input",e=>{
+    const id=e.target.dataset.cand;if(!id)return;
+    const k="p:"+id;memos[k]=e.target.value;lsSet("sedori-memo",memos);
+    const c=R.candidates.find(x=>x.id===id);const box=document.querySelector('[data-res="'+CSS.escape(id)+'"]');if(c&&box)box.innerHTML=candResHtml(c);
+    if(SERVER){clearTimeout(memoT[k]);memoT[k]=setTimeout(()=>call("memo",{key:k,value:memos[k]}).then(()=>setState("保存しました（みんなの記録）")).catch(failSave),800);}
+  });
+  $("candList").addEventListener("focusout",()=>setTimeout(()=>{if(!(document.activeElement&&document.activeElement.dataset&&document.activeElement.dataset.cand))renderCands();},0));
+  $("candList").addEventListener("click",e=>{
+    const b=e.target.closest("button[data-calc]");if(!b)return;
+    const c=R.candidates.find(x=>x.id===b.dataset.calc);if(!c)return;
+    const sell=parseFloat(String(memos["p:"+c.id]||"").replace(/[^\d.]/g,""))||"";
+    fill({name:c.name,buy:c.price||"",pt:"",ptUnit:"pct",sell,ship:c.ship!=null?c.ship:3,shipCustom:""});
+    isExample=false;$("exTag").hidden=true;show("calc");window.scrollTo(0,0);
+  });
+  ["fee","pack","goalYen","goalPct"].forEach(id=>$(id).addEventListener("input",renderCands));
 
+  function renderResearch(){
+    $("candUpdated").textContent=R?md(R.updated)+" に Claude が調べた結果です":"";
+    $("candNote").textContent=R&&R.note?R.note:"";$("candNote").hidden=!(R&&R.note);
+    renderCands();
+    if(!R)return;
+    $("neraiUpdated").textContent=md(R.updated)+" に調べた内容です";
+    $("pickList").innerHTML=(R.picks||[]).map(p=>'<div class="ev"><span class="ev-title">'+esc(p.name)+'<span class="tag fix" aria-label="おすすめ度 '+p.star+'">'+stars(p.star)+'</span></span><p>'+esc(p.why)+'</p><p class="item-meta">注意：'+esc(p.care)+'</p></div>').join("");
+    $("avoidText").textContent=R.avoid?"さけたいもの："+R.avoid:"";
+    $("noteList").innerHTML=(R.notes||[]).map(n=>'<h3>'+esc(n.title)+'</h3><ul class="tips">'+n.items.map(t=>"<li>"+esc(t)+"</li>").join("")+'</ul>').join("");
+    $("evList").innerHTML=(R.events||[]).map(e=>'<div class="ev"><span class="ev-date">'+esc(e.date)+'</span><span class="ev-title">'+esc(e.title)+
+      '<span class="tag '+(e.fix?"fix":"guess")+'">'+(e.fix?"決まり":"予想")+'</span></span><p>'+esc(e.note)+'</p></div>').join("");
+    $("tipList").innerHTML=(R.tips||[]).map(t=>"<li>"+esc(t)+"</li>").join("");
+    $("warnList").innerHTML=(R.warns||[]).map(t=>"<li>"+esc(t)+"</li>").join("");
+    $("srcList").innerHTML="参考："+(R.sources||[]).map(([n,u])=>'<a href="'+esc(u)+'" target="_blank" rel="noopener">'+esc(n)+'</a>').join("　");
+  }
+  renderResearch();
   fill(EX);
-  const t0=lsGet("sedori-tab","calc"); show(TABS.includes(t0)?t0:"calc");
+  const t0=lsGet("sedori-tab2","cand"); show(TABS.includes(t0)?t0:"cand");
+
+  // ===== みんなの記録：読み込み・合言葉 =====
+  if(SERVER){
+    $("syncState").hidden=false;
+    $("restoreBtn").hidden=true;
+    let creating=false;
+    const gate=(mode,err)=>{
+      creating=mode==="create";
+      document.body.classList.add("locked");$("gate").hidden=false;
+      $("gateTitle").textContent=creating?"合言葉を決めてください":"合言葉を入れてください";
+      $("gateText").textContent=creating?"記録をみんなで同じに見るための合言葉です（4文字以上）。いっしょに使う人にも伝えてください。":"記録はみんなで同じものを見ています。教えてもらった合言葉を入れてください。";
+      $("gateErr").textContent=err||"";
+    };
+    const load=()=>{setState("読み込み中…");return call("load").then(d=>{
+      document.body.classList.remove("locked");$("gate").hidden=true;
+      items=d.items||[];lsSet("sedori-items",items);
+      memos=Object.assign({},d.memos||{});lsSet("sedori-memo",memos);
+      if(d.research&&d.research.candidates&&(!R||String(d.research.updated)>=String(R.updated)))R=d.research;
+      renderResearch();renderLog();fillFrom();
+      const t=new Date();setState("みんなの記録（"+t.getHours()+":"+String(t.getMinutes()).padStart(2,"0")+" に読み込み）");
+    }).catch(err=>{
+      if(err&&/合言葉/.test(err.message)){pass="";lsSet("sedori-pass","");gate("enter","合言葉がちがいます");}
+      else setState("読み込めませんでした。電波のよいところで開き直してください");
+    });};
+    $("gateGo").addEventListener("click",()=>{
+      const p=$("gatePass").value.trim();
+      if(p.length<4){$("gateErr").textContent="4文字以上にしてください";return;}
+      const go=()=>{pass=p;lsSet("sedori-pass",p);load();};
+      if(creating)call("setPass",{pass:p}).then(go).catch(e=>{$("gateErr").textContent=e.message||"決められませんでした";});
+      else go();
+    });
+    call("hello").then(h=>{
+      if(!h.hasPass)gate("create");
+      else if(!pass)gate("enter");
+      else load();
+    }).catch(()=>setState("つながりませんでした。開き直してください"));
+    document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="visible"&&pass&&$("gate").hidden)load();});
+  }
 })();
 </script>
 
